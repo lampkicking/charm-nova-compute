@@ -16,7 +16,7 @@ options:
     type: string
     default: distro
     description: |
-      Repository from which to install.  May be one of the following:
+      Repository from which to install. May be one of the following:
       distro (default), ppa:somecustom/ppa, a deb url sources entry or a
       supported Ubuntu Cloud Archive (UCA) release pocket.
       .
@@ -44,14 +44,14 @@ options:
     description: |
       Specifies a default OpenStack release name, or a YAML dictionary
       listing the git repositories to install from.
-
+      .
       The default Openstack release name may be one of the following, where
       the corresponding OpenStack github branch will be used:
         * liberty
         * mitaka
         * newton
         * master
-
+      .
       The YAML must minimally include requirements, neutron, and nova
       repositories, and may also include repositories for other dependencies:
         repositories:
@@ -65,6 +65,22 @@ options:
            repository: 'git://github.com/openstack/nova',
            branch: master
         release: master
+  action-managed-upgrade:
+    type: boolean
+    default: False
+    description: |
+      If True enables openstack upgrades for this charm via juju actions.
+      You will still need to set openstack-origin to the new repository but
+      instead of an upgrade running automatically across all units, it will
+      wait for you to execute the openstack-upgrade action for this charm on
+      each unit. If False it will revert to existing behavior of upgrading
+      all units on config change.
+  harden:
+    default:
+    type: string
+    description: |
+      Apply system hardening. Supports a space-delimited list of modules
+      to run. Supported modules currently include os, ssh, apache and mysql.
   nova-config:
     type: string
     default: /etc/nova/nova.conf
@@ -83,7 +99,7 @@ options:
     description: |
       Virtualization flavor. Supported flavors are: kvm, xen, uml, lxc, qemu,
       lxd.
-
+      .
       NOTE: Changing virtualization flavor after deployment is not supported.
   disk-cachemodes:
     type: string
@@ -94,20 +110,26 @@ options:
   enable-resize:
     type: boolean
     default: False
-    description: Enable instance resizing, which requires that passwordless SSH
-      access be setup between compute hosts.
+    description: |
+      Enable instance resizing.
+      .
+      NOTE: This also enables passwordless SSH access for user 'nova' between
+      compute hosts.
   enable-live-migration:
     type: boolean
     default: False
     description: |
       Configure libvirt or lxd for live migration.
-
+      .
       Live migration support for lxd is still considered experimental.
+      .
+      NOTE: This also enables passwordless SSH access for user 'root' between
+      compute hosts.
   migration-auth-type:
     type: string
     default:
     description: |
-      TCP authentication scheme for libvirt live migration.  Available options
+      TCP authentication scheme for libvirt live migration. Available options
       include ssh.
   authorized-keys-path:
     type: string
@@ -150,8 +172,15 @@ options:
     type: string
     default:
     description: |
-      Sets the pci_passthrough_whitelist option in nova.conf with is used to allow
-      pci passthrough to the VM of specific devices, for example for SR-IOV.
+      Sets the pci_passthrough_whitelist option in nova.conf which allows PCI
+      passthrough of specific devices to VMs.
+      .
+      Example applications: GPU processing, SR-IOV networking, etc.
+      .
+      NOTE: For PCI passthrough to work IOMMU must be enabled on the machine
+      deployed to. This can be accomplished by setting kernel parameters on
+      capable machines in MAAS, tagging them and using these tags as
+      constraints in the model.
   reserved-host-memory:
     type: int
     default: 512
@@ -164,45 +193,42 @@ options:
       Sets vcpu_pin_set option in nova.conf which defines which pcpus that
       instance vcpus can or cannot use. For example '^0,^2' to reserve two
       cpus for the host.
+  worker-multiplier:
+    type: float
+    default:
+    description: |
+      The CPU core multiplier to use when configuring worker processes for
+      this services e.g. metadata-api. By default, the number of workers for
+      each daemon is set to twice the number of CPU cores a service unit has.
+      When deployed in a LXD container, this default value will be capped to 4
+      workers unless this configuration option is set.
   # Required if using FlatManager (nova-network)
   bridge-interface:
     type: string
     default: br100
-    description: Bridge interface to be configured
+    description: Bridge interface to be configured.
   bridge-ip:
     type: string
     default: 11.0.0.1
-    description: IP to be assigned to bridge interface
+    description: IP to be assigned to bridge interface.
   bridge-netmask:
     type: string
     default: 255.255.255.0
-    description: Netmask to be assigned to bridge interface
+    description: Netmask to be assigned to bridge interface.
   # Required if using FlatDHCPManager (nova-network)
   flat-interface:
     type: string
     default: eth1
-    description: Network interface on which to build bridge
-  # Nagios configuration options
-  nagios_context:
-    type: string
-    default: 'juju'
-    description: |
-      Used by the nrpe-external-master subordinate charm. A string that will be
-      prepended to instance name to set the host name in nagios. So for
-      instance the hostname would be something like:
-      .
-        juju-myservice-0
-      .
-      If you're running multiple environments with the same services in them
-      this allows you to differentiate between them.
-  nagios_servicegroups:
+    description: Network interface on which to build bridge.
+  # Network config (by default all access is over 'private-address')
+  os-internal-network:
     type: string
     default:
     description: |
-      A comma-separated list of nagios servicegroups. If left empty, the
-      nagios_context will be used as the servicegroup.
-  # Network configuration options
-  # NOTE: by default all access is over 'private-address'
+      The IP address and netmask of the OpenStack Internal network (e.g.
+      192.168.0.0/24)
+      .
+      This network will be used to bind vncproxy client.
   use-internal-endpoints:
     default: False
     type: boolean
@@ -217,7 +243,7 @@ options:
       If True enables IPv6 support. The charm will expect network interfaces
       to be configured with an IPv6 address. If set to False (default) IPv4
       is expected.
-
+      .
       NOTE: these charms do not currently support IPv6 privacy extension. In
       order for this charm to function correctly, the privacy extension must be
       disabled and a non-temporary address must be configured/available on
@@ -230,7 +256,7 @@ options:
       'host-passthrough' to use the host CPU model exactly; to 'custom' to
       use a named CPU model; to 'none' to not set any CPU model. If
       virt_type='kvm|qemu', it will default to 'host-model', otherwise it will
-      default to 'none'.  Defaults to 'host-passthrough' for ppc64el, ppc64le
+      default to 'none'. Defaults to 'host-passthrough' for ppc64el, ppc64le
       if no value is set.
   cpu-model:
     type: string
@@ -239,7 +265,7 @@ options:
       Set to a named libvirt CPU model (see names listed in
       /usr/share/libvirt/cpu_map.xml). Only has effect if cpu_mode='custom' and
       virt_type='kvm|qemu'.
-  # Storage configuration options
+  # Storage config
   libvirt-image-backend:
     type: string
     default:
@@ -266,7 +292,7 @@ options:
     default: 3
     description: |
       This value dictates the number of replicas ceph must make of any
-      object it stores withing the nova rbd pool. Of course, this only
+      object it stores within the nova rbd pool. Of course, this only
       applies if using Ceph as a backend store. Note that once the nova
       rbd pool has been created, changing this value will not have any
       effect (although it can be changed in ceph by manually configuring
@@ -291,7 +317,7 @@ options:
     type: boolean
     description: |
       Optionally restrict Ceph key permissions to access pools as required.
-  # Other configuration options
+  # Other config
   sysctl:
     type: string
     default:
@@ -303,47 +329,32 @@ options:
     type: string
     default:
     description: |
-      The pecentage of system memory to use for hugepages eg '10%' or the total
-      number of 2M hugepages - eg "1024".
+      The percentage of system memory to use for hugepages eg '10%' or the
+      total number of 2M hugepages - eg "1024".
       For a systemd system (wily and later) the prefered approach is to enable
       hugepages via kernel parameters set in MAAS and systemd will mount them
       automatically.
+      .
+      NOTE: For hugepages to work it must be enabled on the machine deployed
+      to. This can be accomplished by setting kernel parameters on capable
+      machines in MAAS, tagging them and using these tags as constraints in the
+      model.
   ksm:
     type: string
     default: "AUTO"
     description: |
-      Set to 1 to enable KSM, 0 to disable KSM, and AUTO to use default settings.
+      Set to 1 to enable KSM, 0 to disable KSM, and AUTO to use default
+      settings.
+      .
       Please note that the AUTO value works for qemu 2.2+ (> Kilo), older
       releases will be set to 1 as default.
-  action-managed-upgrade:
-    type: boolean
-    default: False
-    description: |
-      If True enables openstack upgrades for this charm via juju actions.
-      You will still need to set openstack-origin to the new repository but
-      instead of an upgrade running automatically across all units, it will
-      wait for you to execute the openstack-upgrade action for this charm on
-      each unit. If False it will revert to existing behavior of upgrading
-      all units on config change.
-  os-internal-network:
-    type: string
-    default:
-    description: |
-      The IP address and netmask of the OpenStack Internal network (e.g.
-      192.168.0.0/24)
-
-      This network will be used to bind vncproxy client.
-  harden:
-    default:
-    type: string
-    description: |
-      Apply system hardening. Supports a space-delimited list of modules
-      to run. Supported modules currently include os, ssh, apache and mysql.
   aa-profile-mode:
     type: string
     default: 'disable'
     description: |
-      Experimental enable apparmor profile. Valid settings: 'complain', 'enforce' or 'disable'.
+      Experimental enable apparmor profile. Valid settings: 'complain',
+      'enforce' or 'disable'.
+      .
       AA disabled by default.
   default-availability-zone:
     type: string
@@ -363,4 +374,23 @@ options:
     default: False
     description: |
       This option determines whether to start guests that were running
-      before the host rebooted
+      before the host rebooted.
+  # Monitoring options
+  nagios_context:
+    type: string
+    default: 'juju'
+    description: |
+      Used by the nrpe-external-master subordinate charm. A string that will be
+      prepended to instance name to set the host name in nagios. So for
+      instance the hostname would be something like:
+      .
+        juju-myservice-0
+      .
+      If you're running multiple environments with the same services in them
+      this allows you to differentiate between them.
+  nagios_servicegroups:
+    type: string
+    default:
+    description: |
+      A comma-separated list of nagios servicegroups. If left empty, the
+      nagios_context will be used as the servicegroup.

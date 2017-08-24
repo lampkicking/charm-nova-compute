@@ -364,6 +364,17 @@ class NovaComputeContextTests(CharmTestCase):
         self.assertEqual(libvirt()['cpu_mode'],
                          'none')
 
+    @patch.object(context, 'platform')
+    @patch.object(context.uuid, 'uuid4')
+    def test_libvirt_cpu_mode_aarch64(self, mock_uuid, mock_platform):
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'xenial'}
+        mock_uuid.return_value = 'e46e530d-18ae-4a67-9ff0-e6e2ba7c60a7'
+        mock_platform.machine.return_value = 'aarch64'
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(libvirt()['cpu_mode'],
+                         'host-passthrough')
+
     def test_libvirt_vnf_configs(self):
         self.kv.return_value = FakeUnitdata(**{'host_uuid': self.host_uuid})
         self.lsb_release.return_value = {'DISTRIB_CODENAME': 'lucid'}

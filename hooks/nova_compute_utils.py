@@ -231,7 +231,8 @@ BASE_RESOURCE_MAP = {
                      context.LogLevelContext(),
                      context.InternalEndpointContext(),
                      SerialConsoleContext(),
-                     NovaComputeAvailabilityZoneContext()],
+                     NovaComputeAvailabilityZoneContext(),
+                     context.WorkerConfigContext()],
     },
     NOVA_API_AA_PROFILE_PATH: {
         'services': ['nova-api'],

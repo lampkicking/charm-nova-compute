@@ -197,7 +197,7 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
 
         if config('cpu-mode'):
             ctxt['cpu_mode'] = config('cpu-mode')
-        elif ctxt['arch'] in ['ppc64el', 'ppc64le']:
+        elif ctxt['arch'] in ('ppc64el', 'ppc64le', 'aarch64'):
             ctxt['cpu_mode'] = 'host-passthrough'
         elif ctxt['arch'] == 's390x':
             ctxt['cpu_mode'] = 'none'
