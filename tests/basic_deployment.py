@@ -618,6 +618,19 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         u.delete_resource(self.nova_demo.servers, instance.id,
                           msg="nova instance")
 
+    def test_500_hugepagereport_action(self):
+        """Verify hugepagereport"""
+        u.log.debug("Testing hugepagereport")
+        sentry_unit = self.nova_compute_sentry
+
+        action_id = u.run_action(sentry_unit, "hugepagereport")
+        assert u.wait_on_action(action_id), "Hugepagereport action failed."
+        data = amulet.actions.get_action_output(action_id, full_output=True)
+        assert data.get(u"status") == "completed", ("Hugepagereport action"
+                                                    "failed")
+        report = data.get(u"results").get(u"hugepagestats")
+        assert report.find('free_hugepages') != -1
+
     def test_900_restart_on_config_change(self):
         """Verify that the specified services are restarted when the config
            is changed."""

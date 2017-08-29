@@ -3,4 +3,6 @@ openstack-upgrade:
 pause:
   description: Pause the nova_compute unit.  This action will stop nova_compute services.
 resume:
-  descrpition: Resume the nova_compute unit.  This action will start nova_compute services.
+  description: Resume the nova_compute unit.  This action will start nova_compute services.
+hugepagereport:
+  description: Report on hugepage configuration and usage
