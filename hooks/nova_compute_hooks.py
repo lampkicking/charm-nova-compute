@@ -261,23 +261,6 @@ def amqp_changed():
     CONFIGS.write(NOVA_CONF)
 
 
-@hooks.hook('shared-db-relation-joined')
-def db_joined(rid=None):
-    relation_set(relation_id=rid,
-                 nova_database=config('database'),
-                 nova_username=config('database-user'),
-                 nova_hostname=get_relation_ip('shared-db'))
-
-
-@hooks.hook('shared-db-relation-changed')
-@restart_on_change(restart_map())
-def db_changed():
-    if 'shared-db' not in CONFIGS.complete_contexts():
-        log('shared-db relation incomplete. Peer not ready?')
-        return
-    CONFIGS.write(NOVA_CONF)
-
-
 @hooks.hook('image-service-relation-changed')
 @restart_on_change(restart_map())
 def image_service_changed():
@@ -411,9 +394,7 @@ def ceph_broken():
     CONFIGS.write_all()
 
 
-@hooks.hook('amqp-relation-broken',
-            'image-service-relation-broken',
-            'shared-db-relation-broken')
+@hooks.hook('amqp-relation-broken', 'image-service-relation-broken')
 @restart_on_change(restart_map())
 def relation_broken():
     CONFIGS.write_all()

@@ -24,8 +24,6 @@ provides:
 extra-bindings:
   internal:
 requires:
-  shared-db:
-    interface: mysql-shared
   amqp:
     interface: rabbitmq
   image-service:

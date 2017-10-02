@@ -100,7 +100,6 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         """Add all of the relations for the services."""
         relations = {
             'nova-compute:image-service': 'glance:image-service',
-            'nova-compute:shared-db': 'percona-cluster:shared-db',
             'nova-compute:amqp': 'rabbitmq-server:amqp',
             'nova-cloud-controller:shared-db': 'percona-cluster:shared-db',
             'nova-cloud-controller:identity-service': 'keystone:'
@@ -395,40 +394,6 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             message = 'S3 endpoint: {}'.format(ret)
             amulet.raise_status(amulet.FAIL, msg=message)
 
-    def test_200_nova_shared_db_relation(self):
-        """Verify the nova-compute to mysql shared-db relation data"""
-        u.log.debug('Checking n-c:mysql db relation data...')
-
-        unit = self.nova_compute_sentry
-        relation = ['shared-db', 'percona-cluster:shared-db']
-        expected = {
-            'private-address': u.valid_ip,
-            'nova_database': 'nova',
-            'nova_username': 'nova',
-            'nova_hostname': u.valid_ip
-        }
-
-        ret = u.validate_relation_data(unit, relation, expected)
-        if ret:
-            message = u.relation_error('nova-compute shared-db', ret)
-            amulet.raise_status(amulet.FAIL, msg=message)
-
-    def test_202_mysql_shared_db_relation(self):
-        """Verify the mysql to nova-compute shared-db relation data"""
-        u.log.debug('Checking mysql:n-c db relation data...')
-        unit = self.pxc_sentry
-        relation = ['shared-db', 'nova-compute:shared-db']
-        expected = {
-            'private-address': u.valid_ip,
-            'nova_password': u.not_null,
-            'db_host': u.valid_ip
-        }
-
-        ret = u.validate_relation_data(unit, relation, expected)
-        if ret:
-            message = u.relation_error('mysql shared-db', ret)
-            amulet.raise_status(amulet.FAIL, msg=message)
-
     def test_204_nova_amqp_relation(self):
         """Verify the nova-compute to rabbitmq-server amqp relation data"""
         u.log.debug('Checking n-c:rmq amqp relation data...')
@@ -506,12 +471,6 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
                                                    'nova-compute:amqp')
         gl_nc_rel = self.glance_sentry.relation('image-service',
                                                 'nova-compute:image-service')
-        db_nc_rel = self.pxc_sentry.relation('shared-db',
-                                             'nova-compute:shared-db')
-        db_uri = "mysql://{}:{}@{}/{}".format('nova',
-                                              db_nc_rel['nova_password'],
-                                              db_nc_rel['db_host'],
-                                              'nova')
         # Common conf across all releases
         expected = {
             'DEFAULT': {
@@ -538,7 +497,6 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
                 'lock_path': '/var/lock/nova',
                 'libvirt_use_virtio_for_bridges': 'True',
                 'compute_driver': 'libvirt.LibvirtDriver',
-                'sql_connection': db_uri,
                 'rabbit_userid': 'nova',
                 'rabbit_virtual_host': 'openstack',
                 'rabbit_password': rmq_nc_rel['password'],
@@ -550,9 +508,6 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             expected.update({
                 'oslo_concurrency': {
                     'lock_path': '/var/lock/nova'
-                },
-                'database': {
-                    'connection': db_uri
                 },
                 'oslo_messaging_rabbit': {
                     'rabbit_userid': 'nova',

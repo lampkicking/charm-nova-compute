@@ -294,36 +294,6 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.assertEqual([call('/etc/nova/nova.conf')],
                          configs.write.call_args_list)
 
-    def test_db_joined(self):
-        self.is_relation_made.return_value = False
-        hooks.db_joined()
-        self.relation_set.assert_called_with(relation_id=None,
-                                             nova_database='nova',
-                                             nova_username='nova',
-                                             nova_hostname='10.0.0.50')
-        self.get_relation_ip.assert_called_with('shared-db')
-
-    @patch.object(hooks, 'CONFIGS')
-    def test_db_changed_missing_relation_data(self, configs):
-        configs.complete_contexts = MagicMock()
-        configs.complete_contexts.return_value = []
-        hooks.db_changed()
-        self.log.assert_called_with(
-            'shared-db relation incomplete. Peer not ready?'
-        )
-
-    def _shared_db_test(self, configs):
-        configs.complete_contexts = MagicMock()
-        configs.complete_contexts.return_value = ['shared-db']
-        configs.write = MagicMock()
-        hooks.db_changed()
-
-    @patch.object(hooks, 'CONFIGS')
-    def test_db_changed_with_data(self, configs):
-        self._shared_db_test(configs)
-        self.assertEqual([call('/etc/nova/nova.conf')],
-                         configs.write.call_args_list)
-
     @patch.object(hooks, 'CONFIGS')
     def test_image_service_missing_relation_data(self, configs):
         configs.complete_contexts = MagicMock()

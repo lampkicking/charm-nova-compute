@@ -733,10 +733,9 @@ def get_optional_relations():
         optional_interfaces['storage-backend'] = ['ceph']
     if relation_ids('neutron-plugin'):
         optional_interfaces['neutron-plugin'] = ['neutron-plugin']
-    if relation_ids('shared-db'):
-        optional_interfaces['database'] = ['shared-db']
     if config('encrypt'):
         optional_interfaces['vault'] = ['secrets-storage']
+
     return optional_interfaces
 
 
