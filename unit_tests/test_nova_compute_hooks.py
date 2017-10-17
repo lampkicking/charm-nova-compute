@@ -161,6 +161,7 @@ class NovaComputeRelationsTests(CharmTestCase):
                     'ceph': ['ceph:0']}.get(x, [])
         self.relation_ids.side_effect = rel_ids
         self.related_units.return_value = ['ceph/0']
+        self.migration_enabled.return_value = False
         hooks.config_changed()
         self.assertTrue(self.do_openstack_upgrade.called)
         neutron_plugin_joined.assert_called_with('rid1', remote_restart=True)
@@ -171,6 +172,7 @@ class NovaComputeRelationsTests(CharmTestCase):
         git_requested.return_value = False
         self.openstack_upgrade_available.return_value = True
         self.test_config.set('action-managed-upgrade', True)
+        self.migration_enabled.return_value = False
 
         hooks.config_changed()
         self.assertFalse(self.do_openstack_upgrade.called)
@@ -203,6 +205,7 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.git_install_requested.return_value = False
         self.test_config.set('enable-resize', True)
         _zmq_joined = self.patch('zeromq_configuration_relation_joined')
+        self.migration_enabled.return_value = False
         self.relation_ids.return_value = [
             'cloud-compute:0',
             'cloud-compute:1'
@@ -223,6 +226,7 @@ class NovaComputeRelationsTests(CharmTestCase):
                                            neutron_plugin_joined):
         self.git_install_requested.return_value = False
         self.test_config.set('enable-resize', False)
+        self.migration_enabled.return_value = False
         _zmq_joined = self.patch('zeromq_configuration_relation_joined')
         self.relation_ids.return_value = [
             'cloud-compute:0',
@@ -249,6 +253,7 @@ class NovaComputeRelationsTests(CharmTestCase):
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_with_sysctl(self, compute_joined):
         self.git_install_requested.return_value = False
+        self.migration_enabled.return_value = False
         self.test_config.set(
             'sysctl',
             '{ kernel.max_pid : "1337", vm.swappiness : 10 }')
@@ -263,6 +268,7 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.test_config.set(
             'sysctl',
             '{ kernel.max_pid : "1337" }')
+        self.migration_enabled.return_value = False
         hooks.config_changed()
         self.create_sysctl.assert_called_with(
             "{kernel.max_pid: '1337', vm.swappiness: 1}\n",
@@ -287,6 +293,7 @@ class NovaComputeRelationsTests(CharmTestCase):
         projects_yaml = yaml.dump(openstack_origin_git)
         self.test_config.set('openstack-origin', repo)
         self.test_config.set('openstack-origin-git', projects_yaml)
+        self.migration_enabled.return_value = False
         hooks.config_changed()
         self.git_install.assert_called_with(projects_yaml)
         self.assertFalse(self.do_openstack_upgrade.called)
@@ -308,6 +315,16 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.is_relation_made.return_value = True
         hooks.config_changed()
         self.assertTrue(self.update_nrpe_config.called)
+
+    @patch.object(hooks, 'compute_joined')
+    def test_config_changed_invalid_migration(self, compute_joined):
+        self.migration_enabled.return_value = True
+        self.test_config.set('migration-auth-type', 'none')
+        with self.assertRaises(Exception) as context:
+            hooks.config_changed()
+            self.assertEqual(
+                context.exception.message,
+                'Invalid migration-auth-type')
 
     @patch('nova_compute_hooks.nrpe')
     @patch('nova_compute_hooks.services')

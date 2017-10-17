@@ -127,7 +127,7 @@ options:
       compute hosts.
   migration-auth-type:
     type: string
-    default:
+    default: ssh
     description: |
       TCP authentication scheme for libvirt live migration. Available options
       include ssh.

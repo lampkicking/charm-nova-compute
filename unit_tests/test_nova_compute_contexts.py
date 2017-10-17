@@ -257,6 +257,7 @@ class NovaComputeContextTests(CharmTestCase):
              'kvm_hugepages': 0,
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
+             'live_migration_uri': 'qemu+ssh://%s/system',
              'reserved_host_memory': 512}, libvirt())
 
     def test_libvirt_disk_cachemodes(self):
@@ -443,7 +444,8 @@ class NovaComputeContextTests(CharmTestCase):
         self.get_relation_ip.return_value = '172.24.0.79'
         host_ip = context.HostIPContext()
         self.assertEqual({'host_ip': '172.24.0.79'}, host_ip())
-        self.get_relation_ip.assert_called_with('cloud-compute')
+        self.get_relation_ip.assert_called_with('cloud-compute',
+                                                cidr_network=None)
 
     @patch('subprocess.call')
     def test_host_IP_context_ipv6(self, _call):
