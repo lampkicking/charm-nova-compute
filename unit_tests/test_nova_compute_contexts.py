@@ -52,7 +52,7 @@ NEUTRON_CONTEXT = {
 
 def fake_log(msg, level=None):
     level = level or 'INFO'
-    print '[juju test log (%s)] %s' % (level, msg)
+    print('[juju test log ({})] {}'.format(level, msg))
 
 
 class FakeUnitdata(object):

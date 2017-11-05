@@ -75,7 +75,7 @@ def _save_flag_file(path, data):
     # Wonder if we can move away from this now?
     if data is None:
         return
-    with open(path, 'wb') as out:
+    with open(path, 'wt') as out:
         out.write(data)
 
 
@@ -446,7 +446,7 @@ class CloudComputeContext(context.OSContextGenerator):
                     'neutron_url': url,
                 }
 
-        missing = [k for k, v in neutron_ctxt.iteritems() if v in ['', None]]
+        missing = [k for k, v in neutron_ctxt.items() if v in ['', None]]
         if missing:
             log('Missing required relation settings for Quantum: ' +
                 ' '.join(missing))

@@ -27,6 +27,7 @@ from test_utils import (
     patch_open
 )
 
+
 VIRSH_NET_LIST = """ Name                 State      Autostart     Persistent
 ----------------------------------------------------------
  somenet              active     yes           yes
@@ -97,7 +98,7 @@ class NovaComputeUtilsTests(CharmTestCase):
             'nova-network',
             'nova-compute-kvm'
         ]
-        self.assertEqual(ex, result)
+        self.assertTrue(ex == result)
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'network_manager')
@@ -116,7 +117,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         ex = utils.BASE_PACKAGES + [
             'nova-compute-kvm'
         ]
-        self.assertEqual(ex, result)
+        self.assertTrue(ex == result)
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
@@ -133,7 +134,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         self.relation_ids.return_value = []
         result = utils.determine_packages()
         ex = utils.BASE_PACKAGES + ['nova-compute-kvm']
-        self.assertEqual(ex, result)
+        self.assertTrue(ex == result)
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
@@ -155,7 +156,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         self.relation_ids.return_value = []
         result = utils.determine_packages()
         ex = utils.BASE_PACKAGES + ['nova-compute-kvm', 'qemu-efi']
-        self.assertEqual(ex, result)
+        self.assertTrue(ex == result)
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
@@ -466,7 +467,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         user.pw_dir = '/home/' + username
         return user
 
-    @patch('__builtin__.open')
+    @patch('builtins.open')
     @patch('pwd.getpwnam')
     def test_public_ssh_key_not_found(self, getpwnam, _open):
         _open.side_effect = Exception
@@ -564,7 +565,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         with patch_open() as (_open, _file):
             utils.import_keystone_ca_cert()
             _open.assert_called_with(utils.CA_CERT_PATH, 'wb')
-            _file.write.assert_called_with('foo_cert\n')
+            _file.write.assert_called_with(b'foo_cert\n')
         check_call.assert_called_with(['update-ca-certificates'])
 
     @patch.object(utils, 'ceph_config_file')
@@ -595,10 +596,10 @@ class NovaComputeUtilsTests(CharmTestCase):
             renderer.assert_called_with(
                 openstack_release='havana', templates_dir='templates/')
             ex_reg = [
+                call('/etc/nova/nova.conf', [ctxt1]),
                 call('/etc/nova/nova-compute.conf', [ctxt2]),
-                call('/etc/nova/nova.conf', [ctxt1])
             ]
-            self.assertEqual(fake_renderer.register.call_args_list, ex_reg)
+            fake_renderer.register.assert_has_calls(ex_reg, any_order=True)
 
     @patch.object(utils, 'check_call')
     def test_enable_shell(self, _check_call):
@@ -639,8 +640,9 @@ class NovaComputeUtilsTests(CharmTestCase):
         key = 'AQCR2dRUaFQSOxAAC5fr79sLL3d7wVvpbbRFMg=='
         old_key = 'AQCR2dRUaFQSOxAAC5fr79sLL3d7wVvpbbRFMg==\n'
         self.test_config.set('virt-type', 'kvm')
-        _check_output.side_effect = [compute_context.CEPH_SECRET_UUID,
-                                     old_key]
+        _check_output.side_effect = [
+            compute_context.CEPH_SECRET_UUID.encode(),
+            old_key.encode()]
         utils.create_libvirt_secret(utils.CEPH_SECRET,
                                     compute_context.CEPH_SECRET_UUID, key)
         expected = [call(['virsh', '-c',
@@ -657,7 +659,9 @@ class NovaComputeUtilsTests(CharmTestCase):
         key = 'AQCR2dRUaFQSOxAAC5fr79sLL3d7wVvpbbRFMg=='
         old_key = 'CCCCCdRUaFQSOxAAC5fr79sLL3d7wVvpbbRFMg=='
         self.test_config.set('virt-type', 'kvm')
-        _check_output.side_effect = [compute_context.CEPH_SECRET_UUID, old_key]
+        _check_output.side_effect = [
+            compute_context.CEPH_SECRET_UUID.encode(),
+            old_key.encode()]
         utils.create_libvirt_secret(utils.CEPH_SECRET,
                                     compute_context.CEPH_SECRET_UUID, key)
         expected = [call(['virsh', '-c',
@@ -695,13 +699,15 @@ class NovaComputeUtilsTests(CharmTestCase):
             utils.configure_lxd('nova')
         self.assertFalse(_configure_subuid.called)
 
+    @patch.object(utils, 'git_default_repos')
     @patch.object(utils, 'git_install_requested')
     @patch.object(utils, 'git_clone_and_install')
     @patch.object(utils, 'git_post_install')
     @patch.object(utils, 'git_pre_install')
     def test_git_install(self, git_pre, git_post, git_clone_and_install,
-                         git_requested):
+                         git_requested, git_default_repos):
         projects_yaml = openstack_origin_git
+        git_default_repos.return_value = projects_yaml
         git_requested.return_value = True
         utils.git_install(projects_yaml)
         self.assertTrue(git_pre.called)
@@ -730,42 +736,42 @@ class NovaComputeUtilsTests(CharmTestCase):
         self.assertEqual(add_user_to_group.call_args_list, expected)
         expected = [
             call('/var/lib/nova', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/buckets', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/CA', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/CA/INTER', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/CA/newcerts', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/CA/private', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/CA/reqs', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/images', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/instances', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/keys', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/networks', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/lib/nova/tmp', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
             call('/var/log/nova', owner='nova',
-                 group='nova', perms=0755, force=False),
+                 group='nova', perms=0o0755, force=False),
         ]
         self.assertEqual(mkdir.call_args_list, expected)
         expected = [
             call('/var/log/nova/nova-api.log', '', owner='nova',
-                 group='nova', perms=0644),
+                 group='nova', perms=0o0644),
             call('/var/log/nova/nova-compute.log', '', owner='nova',
-                 group='nova', perms=0644),
+                 group='nova', perms=0o0644),
             call('/var/log/nova/nova-manage.log', '', owner='nova',
-                 group='nova', perms=0644),
+                 group='nova', perms=0o0644),
             call('/var/log/nova/nova-network.log', '', owner='nova',
-                 group='nova', perms=0644),
+                 group='nova', perms=0o0644),
         ]
         self.assertEqual(write_file.call_args_list, expected)
 
@@ -984,7 +990,7 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'check_call')
     @patch.object(utils, 'check_output')
     def test_destroy_libvirt_network(self, mock_check_output, mock_check_call):
-        mock_check_output.return_value = VIRSH_NET_LIST
+        mock_check_output.return_value = VIRSH_NET_LIST.encode()
         utils.destroy_libvirt_network('default')
         cmd = ['virsh', 'net-destroy', 'default']
         mock_check_call.assert_has_calls([call(cmd)])
@@ -993,7 +999,7 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'check_output')
     def test_destroy_libvirt_network_no_exist(self, mock_check_output,
                                               mock_check_call):
-        mock_check_output.return_value = VIRSH_NET_LIST
+        mock_check_output.return_value = VIRSH_NET_LIST.encode()
         utils.destroy_libvirt_network('defaultX')
         self.assertFalse(mock_check_call.called)
 

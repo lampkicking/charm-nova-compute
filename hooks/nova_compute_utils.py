@@ -376,12 +376,12 @@ def restart_map():
     Constructs a restart map based on charm config settings and relation
     state.
     '''
-    return {k: v['services'] for k, v in resource_map().iteritems()}
+    return {k: v['services'] for k, v in resource_map().items()}
 
 
 def services():
     ''' Returns a list of services associated with this charm '''
-    return list(set(chain(*restart_map().itervalues())))
+    return list(set(chain(*restart_map().values())))
 
 
 def register_configs():
@@ -406,7 +406,7 @@ def register_configs():
         install_alternative(os.path.basename(CEPH_CONF),
                             CEPH_CONF, ceph_config_file())
 
-    for cfg, d in resource_map().iteritems():
+    for cfg, d in resource_map().items():
         configs.register(cfg, d['contexts'])
     return configs
 
@@ -524,7 +524,7 @@ def initialize_ssh_keys(user='root'):
     if not os.path.isfile(pub_key):
         log('Generating missing ssh public key @ %s.' % pub_key)
         cmd = ['ssh-keygen', '-y', '-f', priv_key]
-        p = check_output(cmd).strip()
+        p = check_output(cmd).decode('UTF-8').strip()
         with open(pub_key, 'wb') as out:
             out.write(p)
     check_output(['chown', '-R', user, ssh_dir])
@@ -533,7 +533,7 @@ def initialize_ssh_keys(user='root'):
 def set_ppc64_cpu_smt_state(smt_state):
     """Set ppc64_cpu smt state."""
 
-    current_smt_state = check_output(['ppc64_cpu', '--smt'])
+    current_smt_state = check_output(['ppc64_cpu', '--smt']).decode('UTF-8')
     # Possible smt state values are integer or 'off'
     #   Ex. common ppc64_cpu query command output values:
     #      SMT=8
@@ -651,9 +651,10 @@ def import_keystone_ca_cert():
 
 def create_libvirt_secret(secret_file, secret_uuid, key):
     uri = LIBVIRT_URIS[config('virt-type')]
-    if secret_uuid in check_output(['virsh', '-c', uri, 'secret-list']):
+    cmd = ['virsh', '-c', uri, 'secret-list']
+    if secret_uuid in check_output(cmd).decode('UTF-8'):
         old_key = check_output(['virsh', '-c', uri, 'secret-get-value',
-                                secret_uuid])
+                                secret_uuid]).decode('UTF-8')
         old_key = old_key.strip()
         if old_key == key:
             log('Libvirt secret already exists for uuid %s.' % secret_uuid,
@@ -673,7 +674,7 @@ def create_libvirt_secret(secret_file, secret_uuid, key):
 def destroy_libvirt_network(netname):
     """Delete a network using virsh net-destroy"""
     try:
-        out = check_output(['virsh', 'net-list']).split('\n')
+        out = check_output(['virsh', 'net-list']).decode('UTF-8').splitlines()
         if len(out) < 3:
             return
 
@@ -786,10 +787,10 @@ def git_pre_install():
     add_user_to_group('nova', 'libvirtd')
 
     for d in dirs:
-        mkdir(d, owner='nova', group='nova', perms=0755, force=False)
+        mkdir(d, owner='nova', group='nova', perms=0o0755, force=False)
 
     for l in logs:
-        write_file(l, '', owner='nova', group='nova', perms=0644)
+        write_file(l, '', owner='nova', group='nova', perms=0o0644)
 
 
 def git_post_install(projects_yaml):

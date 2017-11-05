@@ -383,20 +383,18 @@ class NovaComputeRelationsTests(CharmTestCase):
     def test_db_joined_with_postgresql(self):
         self.is_relation_made.return_value = True
 
-        with self.assertRaises(Exception) as context:
+        msg = ('Attempting to associate a mysql database when there is '
+               'already associated a postgresql one')
+
+        with self.assertRaisesRegexp(Exception, msg):
             hooks.db_joined()
-        self.assertEqual(context.exception.message,
-                         'Attempting to associate a mysql database when there '
-                         'is already associated a postgresql one')
 
     def test_postgresql_joined_with_db(self):
         self.is_relation_made.return_value = True
-
-        with self.assertRaises(Exception) as context:
+        msg = ('Attempting to associate a postgresql database when there is '
+               'already associated a mysql one')
+        with self.assertRaisesRegexp(Exception, msg):
             hooks.pgsql_db_joined()
-        self.assertEqual(context.exception.message,
-                         'Attempting to associate a postgresql database when'
-                         ' there is already associated a mysql one')
 
     @patch.object(hooks, 'CONFIGS')
     def test_db_changed_missing_relation_data(self, configs):
