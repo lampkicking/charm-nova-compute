@@ -97,10 +97,14 @@ options:
     type: string
     default: kvm
     description: |
-      Virtualization flavor. Supported flavors are: kvm, xen, uml, lxc, qemu,
-      lxd.
-      .
-      NOTE: Changing virtualization flavor after deployment is not supported.
+      Virtualisation flavor. Supported and tested flavors are: kvm, lxd.
+
+      If using the lxd flavor, the lxd subordinate charm must also be related.
+
+      Other native libvirt flavors available to exercise (dev/test only):
+      uml, lxc, qemu.
+
+      NOTE: Changing virtualisation flavor after deployment is not supported.
   disk-cachemodes:
     type: string
     default:

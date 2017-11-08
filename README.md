@@ -1,8 +1,8 @@
 Overview
 ========
 
-This charm provides Nova Compute, the OpenStack compute service. It's target
-platform is Ubuntu (preferably LTS) + Openstack.
+This charm provides Nova Compute, the OpenStack compute service. Its target
+platform is Ubuntu (preferably LTS) + OpenStack.
 
 Usage
 =====

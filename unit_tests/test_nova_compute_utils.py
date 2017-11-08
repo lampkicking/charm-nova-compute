@@ -855,7 +855,7 @@ class NovaComputeUtilsTests(CharmTestCase):
              'dnsmasq-utils', 'ebtables', 'genisoimage', 'iptables',
              'iputils-arping', 'kpartx', 'kvm', 'netcat', 'open-iscsi',
              'parted', 'python-libvirt', 'qemu', 'qemu-system',
-             'qemu-utils', 'vlan', 'xen-system-amd64'], fatal=True)
+             'qemu-utils', 'vlan'], fatal=True)
 
     @patch('os.listdir')
     @patch('os.path.join')

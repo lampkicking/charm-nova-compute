@@ -163,7 +163,6 @@ LATE_GIT_PACKAGES = [
     'qemu-system',
     'qemu-utils',
     'vlan',
-    'xen-system-amd64',
 ]
 
 # ubuntu packages that should not be installed when deploying from git
@@ -179,7 +178,6 @@ GIT_PACKAGE_BLACKLIST = [
     'nova-compute-lxd',
     'nova-compute-qemu',
     'nova-compute-uml',
-    'nova-compute-xen',
     'nova-network',
     'python-six',
     'quantum-plugin-openvswitch',
@@ -290,7 +288,6 @@ CEPH_RESOURCES = {
 VIRT_TYPES = {
     'kvm': ['nova-compute-kvm'],
     'qemu': ['nova-compute-qemu'],
-    'xen': ['nova-compute-xen'],
     'uml': ['nova-compute-uml'],
     'lxc': ['nova-compute-lxc'],
     'lxd': ['nova-compute-lxd'],
@@ -300,7 +297,6 @@ VIRT_TYPES = {
 LIBVIRT_URIS = {
     'kvm': 'qemu:///system',
     'qemu': 'qemu:///system',
-    'xen': 'xen:///',
     'uml': 'uml:///system',
     'lxc': 'lxc:///',
 }
