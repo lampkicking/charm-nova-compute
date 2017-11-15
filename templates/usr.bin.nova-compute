@@ -70,9 +70,7 @@
   /sys/devices/system/node/** r,
   /sys/devices/virtual/block/nbd*/ r,
   /sys/devices/virtual/net/** w,
-  /tmp/* rw,
-  /tmp/*/ rw,
-  /tmp/** rw,
+  /tmp/{,**} rw,
   /usr/bin/ r,
   /usr/bin/* rix,
   /usr/lib/gcc/x86_64-linux-gnu/4.8/collect2 rix,
@@ -87,7 +85,7 @@
   /var/run/libvirt/* rw,
   /var/run/libvirt/libvirt-sock rw,
   /var/run/openvswitch/db.sock rw,
-  /var/tmp/* w,
+  /var/tmp/{,**} rw,
 {% if ubuntu_release <= '12.04' %}
   /proc/*/mounts r,
   /proc/*/status r,
@@ -95,4 +93,6 @@
   owner @{PROC}/@{pid}/mounts r,
   owner @{PROC}/@{pid}/status r,
 {% endif %}
+  /var/lib/charm/*/ceph.conf r,
+  /etc/ceph/* r,
 }
