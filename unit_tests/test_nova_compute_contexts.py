@@ -517,8 +517,6 @@ class DesignateContextTests(CharmTestCase):
         self.related_units.return_value = 'designate/0'
         self.assertEqual(designatectxt(), {
             'enable_designate': True,
-            'notification_driver': 'messaging',
-            'notification_topics': 'notifications_designate',
             'notify_on_state_change': 'vm_and_task_state',
         })
 

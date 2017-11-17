@@ -598,8 +598,6 @@ class DesignateContext(context.OSContextGenerator):
             if related_units(rid):
                 ctxt['enable_designate'] = True
         if ctxt['enable_designate']:
-            ctxt['notification_driver'] = 'messaging'
-            ctxt['notification_topics'] = 'notifications_designate'
             ctxt['notify_on_state_change'] = 'vm_and_task_state'
         return ctxt
 
