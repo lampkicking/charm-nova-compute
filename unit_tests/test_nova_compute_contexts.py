@@ -575,3 +575,22 @@ class SerialConsoleContextTests(CharmTestCase):
             {'enable_serial_console': 'true',
              'serial_console_base_url': 'ws://10.10.10.1:6083/'}
         )
+
+    def test_libvirt_use_multipath(self):
+        self.kv.return_value = FakeUnitdata(**{'host_uuid': self.host_uuid})
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'yakkety'}
+        self.os_release.return_value = 'ocata'
+        self.test_config.set('use-multipath', True)
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(
+            {'libvirtd_opts': '',
+             'libvirt_user': 'libvirt',
+             'use_multipath': True,
+             'arch': platform.machine(),
+             'ksm': 'AUTO',
+             'kvm_hugepages': 0,
+             'listen_tls': 0,
+             'host_uuid': self.host_uuid,
+             'force_raw_images': True,
+             'reserved_host_memory': 512}, libvirt())

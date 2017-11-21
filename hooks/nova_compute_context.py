@@ -197,6 +197,9 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
         if config('disk-cachemodes'):
             ctxt['disk_cachemodes'] = config('disk-cachemodes')
 
+        if config('use-multipath'):
+            ctxt['use_multipath'] = config('use-multipath')
+
         if config('cpu-mode'):
             ctxt['cpu_mode'] = config('cpu-mode')
         elif ctxt['arch'] in ('ppc64el', 'ppc64le', 'aarch64'):

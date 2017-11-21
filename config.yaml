@@ -379,3 +379,13 @@ options:
     description: |
       A comma-separated list of nagios servicegroups. If left empty, the
       nagios_context will be used as the servicegroup.
+  use-multipath:
+    type: boolean
+    default: False
+    description: |
+      Use a multipath connection for iSCSI volumes. Enabling this feature
+      causes libvirt to discover and login to available iscsi targets before
+      presenting the disk via device mapper (/dev/mapper/XX) to the VM instead
+      of a single path (/dev/disk/by-path/XX). If changed after deployment,
+      each VM will require a full stop/start for changes to take affect.
+
