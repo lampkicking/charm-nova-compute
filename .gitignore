@@ -12,3 +12,4 @@ tests/cirros-*-disk.img
 .unit-state.db
 .idea
 .stestr
+__pycache__

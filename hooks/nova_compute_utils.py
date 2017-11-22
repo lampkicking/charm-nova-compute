@@ -525,7 +525,7 @@ def initialize_ssh_keys(user='root'):
         log('Generating missing ssh public key @ %s.' % pub_key)
         cmd = ['ssh-keygen', '-y', '-f', priv_key]
         p = check_output(cmd).decode('UTF-8').strip()
-        with open(pub_key, 'wb') as out:
+        with open(pub_key, 'wt') as out:
             out.write(p)
     check_output(['chown', '-R', user, ssh_dir])
 
@@ -601,10 +601,10 @@ def import_authorized_keys(user='root', prefix=None):
     log('Saving new known_hosts file to %s and authorized_keys file to: %s.' %
         (dest_known_hosts, dest_auth_keys))
 
-    with open(dest_known_hosts, 'wb') as _hosts:
+    with open(dest_known_hosts, 'wt') as _hosts:
         for index in range(0, int(known_hosts_index)):
             _hosts.write('{}\n'.format(known_hosts[index]))
-    with open(dest_auth_keys, 'wb') as _keys:
+    with open(dest_auth_keys, 'wt') as _keys:
         for index in range(0, int(authorized_keys_index)):
             _keys.write('{}\n'.format(authorized_keys[index]))
 
@@ -644,7 +644,7 @@ def import_keystone_ca_cert():
     if not ca_cert:
         return
     log('Writing Keystone CA certificate to %s' % CA_CERT_PATH)
-    with open(CA_CERT_PATH, 'wb') as out:
+    with open(CA_CERT_PATH, 'wt') as out:
         out.write(b64decode(ca_cert))
     check_call(['update-ca-certificates'])
 

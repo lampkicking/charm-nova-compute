@@ -505,8 +505,8 @@ class NovaComputeUtilsTests(CharmTestCase):
         ]
 
         ex_open = [
-            call('/home/foo/.ssh/known_hosts', 'wb'),
-            call(auth_key_path, 'wb')
+            call('/home/foo/.ssh/known_hosts', 'wt'),
+            call(auth_key_path, 'wt')
         ]
         ex_write = [
             call('k_h_0\n'),
@@ -564,7 +564,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         self.relation_get.return_value = 'Zm9vX2NlcnQK'
         with patch_open() as (_open, _file):
             utils.import_keystone_ca_cert()
-            _open.assert_called_with(utils.CA_CERT_PATH, 'wb')
+            _open.assert_called_with(utils.CA_CERT_PATH, 'wt')
             _file.write.assert_called_with(b'foo_cert\n')
         check_call.assert_called_with(['update-ca-certificates'])
 
