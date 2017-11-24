@@ -644,7 +644,7 @@ def import_keystone_ca_cert():
     if not ca_cert:
         return
     log('Writing Keystone CA certificate to %s' % CA_CERT_PATH)
-    with open(CA_CERT_PATH, 'wt') as out:
+    with open(CA_CERT_PATH, 'wb') as out:
         out.write(b64decode(ca_cert))
     check_call(['update-ca-certificates'])
 
