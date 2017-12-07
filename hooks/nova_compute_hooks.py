@@ -56,7 +56,6 @@ from charmhelpers.contrib.openstack.utils import (
     configure_installation_source,
     git_install_requested,
     openstack_upgrade_available,
-    os_requires_version,
     is_unit_paused_set,
     pausable_restart_on_change as restart_on_change,
 )
@@ -90,7 +89,6 @@ from nova_compute_utils import (
     enable_shell, disable_shell,
     configure_lxd,
     fix_path_ownership,
-    get_topics,
     assert_charm_supports_ipv6,
     install_hugepages,
     get_hugepage_number,
@@ -196,8 +194,6 @@ def config_changed():
         fix_path_ownership(fp, user='nova')
 
     [compute_joined(rid) for rid in relation_ids('cloud-compute')]
-    for rid in relation_ids('zeromq-configuration'):
-        zeromq_configuration_relation_joined(rid)
 
     for rid in relation_ids('neutron-plugin'):
         neutron_plugin_joined(rid, remote_restart=send_remote_restart)
@@ -449,20 +445,6 @@ def upgrade_charm():
 @restart_on_change(restart_map())
 def nova_ceilometer_relation_changed():
     CONFIGS.write_all()
-
-
-@hooks.hook('zeromq-configuration-relation-joined')
-@os_requires_version('kilo', 'nova-common')
-def zeromq_configuration_relation_joined(relid=None):
-    relation_set(relation_id=relid,
-                 topics=" ".join(get_topics()),
-                 users="nova")
-
-
-@hooks.hook('zeromq-configuration-relation-changed')
-@restart_on_change(restart_map())
-def zeromq_configuration_relation_changed():
-    CONFIGS.write(NOVA_CONF)
 
 
 @hooks.hook('nrpe-external-master-relation-joined',

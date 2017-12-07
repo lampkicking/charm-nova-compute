@@ -45,9 +45,6 @@ requires:
   neutron-plugin:
     interface: neutron-plugin
     scope: container
-  zeromq-configuration:
-    interface: zeromq-configuration
-    scope: container
   ephemeral-backend:
     interface: ephemeral-backend
     scope: container

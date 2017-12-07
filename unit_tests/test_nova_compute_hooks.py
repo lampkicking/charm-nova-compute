@@ -183,7 +183,6 @@ class NovaComputeRelationsTests(CharmTestCase):
                                            neutron_plugin_joined):
         self.git_install_requested.return_value = False
         self.migration_enabled.return_value = True
-        _zmq_joined = self.patch('zeromq_configuration_relation_joined')
         self.test_config.set('migration-auth-type', 'ssh')
         self.relation_ids.return_value = [
             'cloud-compute:0',
@@ -196,7 +195,6 @@ class NovaComputeRelationsTests(CharmTestCase):
         ]
         self.assertEqual(ex, compute_joined.call_args_list)
         self.assertTrue(self.initialize_ssh_keys.called)
-        self.assertTrue(_zmq_joined.called)
 
     @patch.object(hooks, 'neutron_plugin_joined')
     @patch.object(hooks, 'compute_joined')
@@ -204,7 +202,6 @@ class NovaComputeRelationsTests(CharmTestCase):
                                         neutron_plugin_joined):
         self.git_install_requested.return_value = False
         self.test_config.set('enable-resize', True)
-        _zmq_joined = self.patch('zeromq_configuration_relation_joined')
         self.migration_enabled.return_value = False
         self.relation_ids.return_value = [
             'cloud-compute:0',
@@ -218,7 +215,6 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.assertEqual(ex, compute_joined.call_args_list)
         self.initialize_ssh_keys.assert_called_with(user='nova')
         self.enable_shell.assert_called_with(user='nova')
-        self.assertTrue(_zmq_joined.called)
 
     @patch.object(hooks, 'neutron_plugin_joined')
     @patch.object(hooks, 'compute_joined')
@@ -227,7 +223,6 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.git_install_requested.return_value = False
         self.test_config.set('enable-resize', False)
         self.migration_enabled.return_value = False
-        _zmq_joined = self.patch('zeromq_configuration_relation_joined')
         self.relation_ids.return_value = [
             'cloud-compute:0',
             'cloud-compute:1'
@@ -239,7 +234,6 @@ class NovaComputeRelationsTests(CharmTestCase):
         ]
         self.assertEqual(ex, compute_joined.call_args_list)
         self.disable_shell.assert_called_with(user='nova')
-        self.assertTrue(_zmq_joined.called)
 
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_no_upgrade_no_migration(self, compute_joined):

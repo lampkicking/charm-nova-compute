@@ -304,7 +304,7 @@ LIBVIRT_URIS = {
 # The interface is said to be satisfied if anyone of the interfaces in the
 # list has a complete context.
 REQUIRED_INTERFACES = {
-    'messaging': ['amqp', 'zeromq-configuration'],
+    'messaging': ['amqp'],
     'image': ['image-service'],
 }
 
@@ -732,10 +732,6 @@ def disable_shell(user):
 def fix_path_ownership(path, user='nova'):
     cmd = ['chown', user, path]
     check_call(cmd)
-
-
-def get_topics():
-    return ['compute']
 
 
 def assert_charm_supports_ipv6():
