@@ -1,7 +1,7 @@
 {% if volume_service and volume_service == 'cinder' -%}
 [cinder]
 {% if use_internal_endpoints -%}
-catalog_info = volumev2:cinderv2:internalURL
+catalog_info = volumev{{volume_api_version}}:cinderv{{volume_api_version}}:internalURL
 {% endif %}
 {% if region -%}
 os_region_name = {{ region }}

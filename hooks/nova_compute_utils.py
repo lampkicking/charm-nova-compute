@@ -228,7 +228,7 @@ BASE_RESOURCE_MAP = {
                      DesignateContext(),
                      NovaComputeVirtContext(),
                      context.LogLevelContext(),
-                     context.InternalEndpointContext(),
+                     context.InternalEndpointContext('nova-common'),
                      SerialConsoleContext(),
                      NovaComputeAvailabilityZoneContext(),
                      context.WorkerConfigContext()],
