@@ -28,7 +28,6 @@ from charmhelpers.core.hookenv import (
     config,
     is_relation_made,
     log,
-    ERROR,
     relation_ids,
     remote_service_name,
     related_units,
@@ -248,30 +247,10 @@ def amqp_changed():
 
 @hooks.hook('shared-db-relation-joined')
 def db_joined(rid=None):
-    if is_relation_made('pgsql-db'):
-        # error, postgresql is used
-        e = ('Attempting to associate a mysql database when there is already '
-             'associated a postgresql one')
-        log(e, level=ERROR)
-        raise Exception(e)
-
     relation_set(relation_id=rid,
                  nova_database=config('database'),
                  nova_username=config('database-user'),
                  nova_hostname=get_relation_ip('shared-db'))
-
-
-@hooks.hook('pgsql-db-relation-joined')
-def pgsql_db_joined():
-    if is_relation_made('shared-db'):
-        # raise error
-        e = ('Attempting to associate a postgresql database when'
-             ' there is already associated a mysql one')
-        log(e, level=ERROR)
-        raise Exception(e)
-
-    relation_set(**{'database': config('database'),
-                    'private-address': get_relation_ip('psql-db')})
 
 
 @hooks.hook('shared-db-relation-changed')
@@ -279,15 +258,6 @@ def pgsql_db_joined():
 def db_changed():
     if 'shared-db' not in CONFIGS.complete_contexts():
         log('shared-db relation incomplete. Peer not ready?')
-        return
-    CONFIGS.write(NOVA_CONF)
-
-
-@hooks.hook('pgsql-db-relation-changed')
-@restart_on_change(restart_map())
-def postgresql_db_changed():
-    if 'pgsql-db' not in CONFIGS.complete_contexts():
-        log('pgsql-db relation incomplete. Peer not ready?')
         return
     CONFIGS.write(NOVA_CONF)
 
@@ -421,8 +391,7 @@ def ceph_broken():
 
 @hooks.hook('amqp-relation-broken',
             'image-service-relation-broken',
-            'shared-db-relation-broken',
-            'pgsql-db-relation-broken')
+            'shared-db-relation-broken')
 @restart_on_change(restart_map())
 def relation_broken():
     CONFIGS.write_all()

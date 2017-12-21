@@ -368,28 +368,6 @@ class NovaComputeRelationsTests(CharmTestCase):
                                              nova_hostname='10.0.0.50')
         self.get_relation_ip.assert_called_with('shared-db')
 
-    def test_postgresql_db_joined(self):
-        self.is_relation_made.return_value = False
-        hooks.pgsql_db_joined()
-        self.relation_set.assert_called_with(**{
-            'database': 'nova', 'private-address': '10.0.0.50'})
-
-    def test_db_joined_with_postgresql(self):
-        self.is_relation_made.return_value = True
-
-        msg = ('Attempting to associate a mysql database when there is '
-               'already associated a postgresql one')
-
-        with self.assertRaisesRegexp(Exception, msg):
-            hooks.db_joined()
-
-    def test_postgresql_joined_with_db(self):
-        self.is_relation_made.return_value = True
-        msg = ('Attempting to associate a postgresql database when there is '
-               'already associated a mysql one')
-        with self.assertRaisesRegexp(Exception, msg):
-            hooks.pgsql_db_joined()
-
     @patch.object(hooks, 'CONFIGS')
     def test_db_changed_missing_relation_data(self, configs):
         configs.complete_contexts = MagicMock()
@@ -399,36 +377,15 @@ class NovaComputeRelationsTests(CharmTestCase):
             'shared-db relation incomplete. Peer not ready?'
         )
 
-    @patch.object(hooks, 'CONFIGS')
-    def test_postgresql_db_changed_missing_relation_data(self, configs):
-        configs.complete_contexts = MagicMock()
-        configs.complete_contexts.return_value = []
-        hooks.postgresql_db_changed()
-        self.log.assert_called_with(
-            'pgsql-db relation incomplete. Peer not ready?'
-        )
-
     def _shared_db_test(self, configs):
         configs.complete_contexts = MagicMock()
         configs.complete_contexts.return_value = ['shared-db']
         configs.write = MagicMock()
         hooks.db_changed()
 
-    def _postgresql_db_test(self, configs):
-        configs.complete_contexts = MagicMock()
-        configs.complete_contexts.return_value = ['pgsql-db']
-        configs.write = MagicMock()
-        hooks.postgresql_db_changed()
-
     @patch.object(hooks, 'CONFIGS')
     def test_db_changed_with_data(self, configs):
         self._shared_db_test(configs)
-        self.assertEqual([call('/etc/nova/nova.conf')],
-                         configs.write.call_args_list)
-
-    @patch.object(hooks, 'CONFIGS')
-    def test_postgresql_db_changed_with_data(self, configs):
-        self._postgresql_db_test(configs)
         self.assertEqual([call('/etc/nova/nova.conf')],
                          configs.write.call_args_list)
 

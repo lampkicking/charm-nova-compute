@@ -207,7 +207,6 @@ BASE_RESOURCE_MAP = {
         'contexts': [context.AMQPContext(ssl_dir=NOVA_CONF_DIR),
                      context.SharedDBContext(
                          relation_prefix='nova', ssl_dir=NOVA_CONF_DIR),
-                     context.PostgresqlDBContext(),
                      context.ImageServiceContext(),
                      context.OSConfigFlagContext(),
                      CloudComputeContext(),
@@ -960,8 +959,8 @@ def get_optional_relations():
         optional_interfaces['storage-backend'] = ['ceph']
     if relation_ids('neutron-plugin'):
         optional_interfaces['neutron-plugin'] = ['neutron-plugin']
-    if relation_ids('shared-db') or relation_ids('pgsql-db'):
-        optional_interfaces['database'] = ['shared-db', 'pgsql-db']
+    if relation_ids('shared-db'):
+        optional_interfaces['database'] = ['shared-db']
     return optional_interfaces
 
 
