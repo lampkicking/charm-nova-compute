@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-import yaml
+import importlib
 
 from mock import (
     ANY,
@@ -24,11 +23,6 @@ from mock import (
 
 from nova_compute_hooks import update_nrpe_config
 
-# python-apt is not installed as part of test-requirements but is imported by
-# some charmhelpers modules so create a fake import.
-sys.modules['apt'] = MagicMock()
-sys.modules['apt_pkg'] = MagicMock()
-
 from test_utils import CharmTestCase
 
 with patch('charmhelpers.contrib.hardening.harden.harden') as mock_dec:
@@ -37,6 +31,7 @@ with patch('charmhelpers.contrib.hardening.harden.harden') as mock_dec:
     with patch("nova_compute_utils.restart_map"):
         with patch("nova_compute_utils.register_configs"):
             import nova_compute_hooks as hooks
+            importlib.reload(hooks)
 
 
 TO_PATCH = [
@@ -80,8 +75,6 @@ TO_PATCH = [
     'disable_shell',
     'enable_shell',
     'update_nrpe_config',
-    'git_install',
-    'git_install_requested',
     'network_manager',
     'libvirt_daemon',
     # misc_utils
@@ -124,36 +117,10 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.apt_install.assert_called_with(['foo', 'bar'], fatal=True)
         self.assertTrue(self.execd_preinstall.called)
 
-    def test_install_hook_git(self):
-        self.git_install_requested.return_value = True
-        self.determine_packages.return_value = ['foo', 'bar']
-        repo = 'cloud:trusty-juno'
-        openstack_origin_git = {
-            'repositories': [
-                {'name': 'requirements',
-                 'repository': 'git://git.openstack.org/openstack/requirements',  # noqa
-                 'branch': 'stable/juno'},
-                {'name': 'nova',
-                 'repository': 'git://git.openstack.org/openstack/nova',
-                 'branch': 'stable/juno'}
-            ],
-            'directory': '/mnt/openstack-git',
-        }
-        projects_yaml = yaml.dump(openstack_origin_git)
-        self.test_config.set('openstack-origin', repo)
-        self.test_config.set('openstack-origin-git', projects_yaml)
-        hooks.install()
-        self.configure_installation_source.assert_called_with(repo)
-        self.assertTrue(self.apt_update.called)
-        self.apt_install.assert_called_with(['foo', 'bar'], fatal=True)
-        self.git_install.assert_called_with(projects_yaml)
-        self.assertTrue(self.execd_preinstall.called)
-
     @patch.object(hooks, 'ceph_changed')
     @patch.object(hooks, 'neutron_plugin_joined')
     def test_config_changed_with_upgrade(self, neutron_plugin_joined,
                                          ceph_changed):
-        self.git_install_requested.return_value = False
         self.openstack_upgrade_available.return_value = True
 
         def rel_ids(x):
@@ -167,9 +134,7 @@ class NovaComputeRelationsTests(CharmTestCase):
         neutron_plugin_joined.assert_called_with('rid1', remote_restart=True)
         ceph_changed.assert_called_with(rid='ceph:0', unit='ceph/0')
 
-    @patch.object(hooks, 'git_install_requested')
-    def test_config_changed_with_openstack_upgrade_action(self, git_requested):
-        git_requested.return_value = False
+    def test_config_changed_with_openstack_upgrade_action(self):
         self.openstack_upgrade_available.return_value = True
         self.test_config.set('action-managed-upgrade', True)
         self.migration_enabled.return_value = False
@@ -181,7 +146,6 @@ class NovaComputeRelationsTests(CharmTestCase):
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_with_migration(self, compute_joined,
                                            neutron_plugin_joined):
-        self.git_install_requested.return_value = False
         self.migration_enabled.return_value = True
         self.test_config.set('migration-auth-type', 'ssh')
         self.relation_ids.return_value = [
@@ -200,7 +164,6 @@ class NovaComputeRelationsTests(CharmTestCase):
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_with_resize(self, compute_joined,
                                         neutron_plugin_joined):
-        self.git_install_requested.return_value = False
         self.test_config.set('enable-resize', True)
         self.migration_enabled.return_value = False
         self.relation_ids.return_value = [
@@ -220,7 +183,6 @@ class NovaComputeRelationsTests(CharmTestCase):
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_without_resize(self, compute_joined,
                                            neutron_plugin_joined):
-        self.git_install_requested.return_value = False
         self.test_config.set('enable-resize', False)
         self.migration_enabled.return_value = False
         self.relation_ids.return_value = [
@@ -237,7 +199,6 @@ class NovaComputeRelationsTests(CharmTestCase):
 
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_no_upgrade_no_migration(self, compute_joined):
-        self.git_install_requested.return_value = False
         self.openstack_upgrade_available.return_value = False
         self.migration_enabled.return_value = False
         hooks.config_changed()
@@ -246,7 +207,6 @@ class NovaComputeRelationsTests(CharmTestCase):
 
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_with_sysctl(self, compute_joined):
-        self.git_install_requested.return_value = False
         self.migration_enabled.return_value = False
         self.test_config.set(
             'sysctl',
@@ -258,7 +218,6 @@ class NovaComputeRelationsTests(CharmTestCase):
 
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_with_sysctl_swappy_default(self, compute_joined):
-        self.git_install_requested.return_value = False
         self.test_config.set(
             'sysctl',
             '{ kernel.max_pid : "1337" }')
@@ -268,33 +227,8 @@ class NovaComputeRelationsTests(CharmTestCase):
             "{kernel.max_pid: '1337', vm.swappiness: 1}\n",
             '/etc/sysctl.d/50-nova-compute.conf')
 
-    @patch.object(hooks, 'config_value_changed')
-    def test_config_changed_git(self, config_val_changed):
-        self.git_install_requested.return_value = True
-        repo = 'cloud:trusty-juno'
-        openstack_origin_git = {
-            'repositories': [
-                {'name': 'requirements',
-                 'repository':
-                 'git://git.openstack.org/openstack/requirements',
-                 'branch': 'stable/juno'},
-                {'name': 'nova',
-                 'repository': 'git://git.openstack.org/openstack/nova',
-                 'branch': 'stable/juno'}
-            ],
-            'directory': '/mnt/openstack-git',
-        }
-        projects_yaml = yaml.dump(openstack_origin_git)
-        self.test_config.set('openstack-origin', repo)
-        self.test_config.set('openstack-origin-git', projects_yaml)
-        self.migration_enabled.return_value = False
-        hooks.config_changed()
-        self.git_install.assert_called_with(projects_yaml)
-        self.assertFalse(self.do_openstack_upgrade.called)
-
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_no_nrpe(self, compute_joined):
-        self.git_install_requested.return_value = False
         self.openstack_upgrade_available.return_value = False
         self.migration_enabled.return_value = False
         self.is_relation_made.return_value = False
@@ -303,7 +237,6 @@ class NovaComputeRelationsTests(CharmTestCase):
 
     @patch.object(hooks, 'compute_joined')
     def test_config_changed_nrpe(self, compute_joined):
-        self.git_install_requested.return_value = False
         self.openstack_upgrade_available.return_value = False
         self.migration_enabled.return_value = False
         self.is_relation_made.return_value = True

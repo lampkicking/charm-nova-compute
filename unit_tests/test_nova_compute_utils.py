@@ -39,19 +39,14 @@ TO_PATCH = [
     'apt_install',
     'apt_update',
     'config',
-    'git_src_dir',
-    'git_pip_venv_dir',
     'os_release',
     'log',
-    'pip_install',
     'related_units',
     'relation_ids',
     'relation_get',
-    'render',
     'service_restart',
     'mkdir',
     'install_alternative',
-    'add_user_to_group',
     'MetadataServiceContext',
     'lsb_release',
     'charm_dir',
@@ -61,15 +56,6 @@ TO_PATCH = [
     'os_application_version_set',
     'lsb_release',
 ]
-
-openstack_origin_git = \
-    """repositories:
-         - {name: requirements,
-            repository: 'git://git.openstack.org/openstack/requirements',
-            branch: stable/juno}
-         - {name: nova,
-            repository: 'git://git.openstack.org/openstack/nova',
-            branch: stable/juno}"""
 
 
 class NovaComputeUtilsTests(CharmTestCase):
@@ -82,12 +68,10 @@ class NovaComputeUtilsTests(CharmTestCase):
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
     @patch('platform.machine')
-    def test_determine_packages_nova_network(self, machine, git_requested,
+    def test_determine_packages_nova_network(self, machine,
                                              net_man, en_meta):
         self.os_release.return_value = 'icehouse'
-        git_requested.return_value = False
         en_meta.return_value = (False, None)
         net_man.return_value = 'flatdhcpmanager'
         machine.return_value = 'x86_64'
@@ -102,13 +86,10 @@ class NovaComputeUtilsTests(CharmTestCase):
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
     @patch('platform.machine')
     def test_determine_packages_nova_network_ocata(self, machine,
-                                                   git_requested,
                                                    net_man, en_meta):
         self.os_release.return_value = 'ocata'
-        git_requested.return_value = False
         en_meta.return_value = (False, None)
         net_man.return_value = 'flatdhcpmanager'
         machine.return_value = 'x86_64'
@@ -122,11 +103,9 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
     @patch('platform.machine')
-    def test_determine_packages_neutron(self, machine, git_requested, net_man,
+    def test_determine_packages_neutron(self, machine, net_man,
                                         n_plugin, en_meta):
-        git_requested.return_value = False
         en_meta.return_value = (False, None)
         net_man.return_value = 'neutron'
         n_plugin.return_value = 'ovs'
@@ -139,16 +118,13 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
     @patch('platform.machine')
     def test_determine_packages_neutron_aarch64_xenial(self, machine,
-                                                       git_requested,
                                                        net_man, n_plugin,
                                                        en_meta):
         self.lsb_release.return_value = {
             'DISTRIB_CODENAME': 'xenial'
         }
-        git_requested.return_value = False
         en_meta.return_value = (False, None)
         net_man.return_value = 'neutron'
         n_plugin.return_value = 'ovs'
@@ -161,16 +137,13 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
     @patch('platform.machine')
     def test_determine_packages_neutron_aarch64_trusty(self, machine,
-                                                       git_requested,
                                                        net_man, n_plugin,
                                                        en_meta):
         self.lsb_release.return_value = {
             'DISTRIB_CODENAME': 'trusty'
         }
-        git_requested.return_value = False
         en_meta.return_value = (False, None)
         net_man.return_value = 'neutron'
         n_plugin.return_value = 'ovs'
@@ -183,11 +156,9 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
     @patch('platform.machine')
-    def test_determine_packages_neutron_ceph(self, machine, git_requested,
+    def test_determine_packages_neutron_ceph(self, machine,
                                              net_man, n_plugin, en_meta):
-        git_requested.return_value = False
         en_meta.return_value = (False, None)
         net_man.return_value = 'neutron'
         n_plugin.return_value = 'ovs'
@@ -200,10 +171,8 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
-    @patch.object(utils, 'git_install_requested')
-    def test_determine_packages_metadata(self, git_requested, net_man,
+    def test_determine_packages_metadata(self, net_man,
                                          n_plugin, en_meta):
-        git_requested.return_value = False
         en_meta.return_value = (True, None)
         net_man.return_value = 'bob'
         n_plugin.return_value = 'ovs'
@@ -686,212 +655,15 @@ class NovaComputeUtilsTests(CharmTestCase):
         _configure_subuid.assert_called_with('nova')
         _lxc_list.assert_called_with('nova')
 
-    @patch.object(utils, 'git_install_requested')
     @patch.object(utils, 'lxc_list')
     @patch.object(utils, 'configure_subuid')
-    def test_configure_lxd_pre_vivid(self, _configure_subuid, _lxc_list,
-                                     _git_install):
-        _git_install.return_value = False
+    def test_configure_lxd_pre_vivid(self, _configure_subuid, _lxc_list):
         self.lsb_release.return_value = {
             'DISTRIB_CODENAME': 'trusty'
         }
         with self.assertRaises(Exception):
             utils.configure_lxd('nova')
         self.assertFalse(_configure_subuid.called)
-
-    @patch.object(utils, 'git_default_repos')
-    @patch.object(utils, 'git_install_requested')
-    @patch.object(utils, 'git_clone_and_install')
-    @patch.object(utils, 'git_post_install')
-    @patch.object(utils, 'git_pre_install')
-    def test_git_install(self, git_pre, git_post, git_clone_and_install,
-                         git_requested, git_default_repos):
-        projects_yaml = openstack_origin_git
-        git_default_repos.return_value = projects_yaml
-        git_requested.return_value = True
-        utils.git_install(projects_yaml)
-        self.assertTrue(git_pre.called)
-        git_clone_and_install.assert_called_with(openstack_origin_git,
-                                                 core_project='nova')
-        self.assertTrue(git_post.called)
-
-    @patch.object(utils, 'mkdir')
-    @patch.object(utils, 'write_file')
-    @patch.object(utils, 'add_user_to_group')
-    @patch.object(utils, 'add_group')
-    @patch.object(utils, 'adduser')
-    @patch.object(utils, 'check_call')
-    def test_git_pre_install(self, check_call, adduser, add_group,
-                             add_user_to_group, write_file, mkdir):
-        utils.git_pre_install()
-        adduser.assert_called_with('nova', shell='/bin/bash',
-                                   system_user=True)
-        check_call.assert_called_with(['usermod', '--home', '/var/lib/nova',
-                                       'nova'])
-        add_group.assert_called_with('nova', system_group=True)
-        expected = [
-            call('nova', 'nova'),
-            call('nova', 'libvirtd'),
-        ]
-        self.assertEqual(add_user_to_group.call_args_list, expected)
-        expected = [
-            call('/var/lib/nova', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/buckets', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/CA', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/CA/INTER', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/CA/newcerts', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/CA/private', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/CA/reqs', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/images', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/instances', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/keys', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/networks', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/lib/nova/tmp', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-            call('/var/log/nova', owner='nova',
-                 group='nova', perms=0o0755, force=False),
-        ]
-        self.assertEqual(mkdir.call_args_list, expected)
-        expected = [
-            call('/var/log/nova/nova-api.log', '', owner='nova',
-                 group='nova', perms=0o0644),
-            call('/var/log/nova/nova-compute.log', '', owner='nova',
-                 group='nova', perms=0o0644),
-            call('/var/log/nova/nova-manage.log', '', owner='nova',
-                 group='nova', perms=0o0644),
-            call('/var/log/nova/nova-network.log', '', owner='nova',
-                 group='nova', perms=0o0644),
-        ]
-        self.assertEqual(write_file.call_args_list, expected)
-
-    @patch('os.path.join')
-    @patch('os.path.exists')
-    @patch('os.symlink')
-    @patch('shutil.copytree')
-    @patch('shutil.rmtree')
-    @patch('subprocess.check_call')
-    def test_git_post_install_upstart(self, check_call, rmtree, copytree,
-                                      symlink, exists, join):
-        projects_yaml = openstack_origin_git
-        join.return_value = 'joined-string'
-        self.lsb_release.return_value = {'DISTRIB_RELEASE': '15.04'}
-        self.git_pip_venv_dir.return_value = '/mnt/openstack-git/venv'
-        utils.git_post_install(projects_yaml)
-        expected = [
-            call('joined-string', '/etc/nova'),
-        ]
-        copytree.assert_has_calls(expected)
-        expected = [
-            call('joined-string', '/usr/local/bin/nova-rootwrap'),
-        ]
-        symlink.assert_has_calls(expected, any_order=True)
-
-        service_name = 'nova-compute'
-        nova_user = 'nova'
-        start_dir = '/var/lib/nova'
-        nova_conf = '/etc/nova/nova.conf'
-        nova_api_metadata_context = {
-            'service_description': 'Nova Metadata API server',
-            'service_name': service_name,
-            'user_name': nova_user,
-            'start_dir': start_dir,
-            'process_name': 'nova-api-metadata',
-            'executable_name': 'joined-string',
-            'config_files': [nova_conf],
-        }
-        nova_api_context = {
-            'service_description': 'Nova API server',
-            'service_name': service_name,
-            'user_name': nova_user,
-            'start_dir': start_dir,
-            'process_name': 'nova-api',
-            'executable_name': 'joined-string',
-            'config_files': [nova_conf],
-        }
-        nova_compute_context = {
-            'service_description': 'Nova compute worker',
-            'service_name': service_name,
-            'user_name': nova_user,
-            'process_name': 'nova-compute',
-            'executable_name': 'joined-string',
-            'config_files': [nova_conf, '/etc/nova/nova-compute.conf'],
-        }
-        nova_network_context = {
-            'service_description': 'Nova network worker',
-            'service_name': service_name,
-            'user_name': nova_user,
-            'start_dir': start_dir,
-            'process_name': 'nova-network',
-            'executable_name': 'joined-string',
-            'config_files': [nova_conf],
-        }
-        expected = [
-            call('git/nova-compute-kvm.conf', '/etc/nova/nova-compute.conf',
-                 {}, perms=0o644),
-            call('git/nova_sudoers', '/etc/sudoers.d/nova_sudoers',
-                 {}, perms=0o440),
-            call('git.upstart', '/etc/init/nova-api-metadata.conf',
-                 nova_api_metadata_context, perms=0o644,
-                 templates_dir='joined-string'),
-            call('git.upstart', '/etc/init/nova-api.conf',
-                 nova_api_context, perms=0o644,
-                 templates_dir='joined-string'),
-            call('git/upstart/nova-compute.upstart',
-                 '/etc/init/nova-compute.conf',
-                 nova_compute_context, perms=420),
-            call('git.upstart', '/etc/init/nova-network.conf',
-                 nova_network_context, perms=0o644,
-                 templates_dir='joined-string'),
-        ]
-        self.assertEqual(self.render.call_args_list, expected)
-        self.assertTrue(self.apt_update.called)
-        self.apt_install.assert_called_with(
-            ['bridge-utils', 'dnsmasq-base',
-             'dnsmasq-utils', 'ebtables', 'genisoimage', 'iptables',
-             'iputils-arping', 'kpartx', 'kvm', 'netcat', 'open-iscsi',
-             'parted', 'python-libvirt', 'qemu', 'qemu-system',
-             'qemu-utils', 'vlan'], fatal=True)
-
-    @patch('os.listdir')
-    @patch('os.path.join')
-    @patch('os.path.exists')
-    @patch('os.symlink')
-    @patch('shutil.copytree')
-    @patch('shutil.rmtree')
-    @patch('subprocess.check_call')
-    def test_git_post_install_systemd(self, check_call, rmtree, copytree,
-                                      symlink, exists, join, listdir):
-        projects_yaml = openstack_origin_git
-        join.return_value = 'joined-string'
-        self.lsb_release.return_value = {'DISTRIB_RELEASE': '15.10'}
-        self.git_pip_venv_dir.return_value = '/mnt/openstack-git/venv'
-        utils.git_post_install(projects_yaml)
-        expected = [
-            call('git/nova-compute-kvm.conf', '/etc/nova/nova-compute.conf',
-                 {}, perms=420),
-            call('git/nova_sudoers', '/etc/sudoers.d/nova_sudoers',
-                 {}, perms=288),
-            call('git/nova-api.init.in.template', 'joined-string',
-                 {'daemon_path': 'joined-string'}, perms=420),
-            call('git/nova-api-metadata.init.in.template', 'joined-string',
-                 {'daemon_path': 'joined-string'}, perms=420),
-            call('git/nova-compute.init.in.template', 'joined-string',
-                 {'daemon_path': 'joined-string'}, perms=420),
-            call('git/nova-network.init.in.template', 'joined-string',
-                 {'daemon_path': 'joined-string'}, perms=420),
-        ]
-        self.assertEqual(self.render.call_args_list, expected)
 
     @patch('psutil.virtual_memory')
     @patch('subprocess.check_call')

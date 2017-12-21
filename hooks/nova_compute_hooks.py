@@ -51,9 +51,7 @@ from charmhelpers.fetch import (
 )
 
 from charmhelpers.contrib.openstack.utils import (
-    config_value_changed,
     configure_installation_source,
-    git_install_requested,
     openstack_upgrade_available,
     is_unit_paused_set,
     pausable_restart_on_change as restart_on_change,
@@ -72,7 +70,6 @@ from charmhelpers.payload.execd import execd_preinstall
 from nova_compute_utils import (
     create_libvirt_secret,
     determine_packages,
-    git_install,
     import_authorized_keys,
     import_keystone_ca_cert,
     initialize_ssh_keys,
@@ -135,9 +132,6 @@ def install():
     apt_update()
     apt_install(determine_packages(), fatal=True)
 
-    status_set('maintenance', 'Git install')
-    git_install(config('openstack-origin-git'))
-
 
 @hooks.hook('config-changed')
 @restart_on_change(restart_map())
@@ -154,11 +148,7 @@ def config_changed():
         raise Exception(message)
     global CONFIGS
     send_remote_restart = False
-    if git_install_requested():
-        if config_value_changed('openstack-origin-git'):
-            status_set('maintenance', 'Running Git install')
-            git_install(config('openstack-origin-git'))
-    elif not config('action-managed-upgrade'):
+    if not config('action-managed-upgrade'):
         if openstack_upgrade_available('nova-common'):
             status_set('maintenance', 'Running openstack upgrade')
             do_openstack_upgrade(CONFIGS)

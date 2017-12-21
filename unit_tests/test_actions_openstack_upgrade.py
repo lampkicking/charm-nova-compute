@@ -43,13 +43,11 @@ class TestNovaComputeUpgradeActions(CharmTestCase):
 
     @patch('charmhelpers.contrib.openstack.utils.config')
     @patch('charmhelpers.contrib.openstack.utils.action_set')
-    @patch('charmhelpers.contrib.openstack.utils.git_install_requested')
     @patch('charmhelpers.contrib.openstack.utils.openstack_upgrade_available')
     @patch('charmhelpers.contrib.openstack.utils.juju_log')
-    def test_openstack_upgrade_true(self, log, upgrade_avail, git_requested,
+    def test_openstack_upgrade_true(self, log, upgrade_avail,
                                     action_set, config):
 
-        git_requested.return_value = False
         upgrade_avail.return_value = True
         config.return_value = True
 
@@ -60,13 +58,11 @@ class TestNovaComputeUpgradeActions(CharmTestCase):
 
     @patch('charmhelpers.contrib.openstack.utils.config')
     @patch('charmhelpers.contrib.openstack.utils.action_set')
-    @patch('charmhelpers.contrib.openstack.utils.git_install_requested')  # noqa
     @patch('charmhelpers.contrib.openstack.utils.openstack_upgrade_available')  # noqa
     @patch('charmhelpers.contrib.openstack.utils.juju_log')
-    def test_openstack_upgrade_false(self, log, upgrade_avail, git_requested,
+    def test_openstack_upgrade_false(self, log, upgrade_avail,
                                      action_set, config):
 
-        git_requested.return_value = False
         upgrade_avail.return_value = True
         config.return_value = False
 

@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import amulet
-import os
-import yaml
 
 from charmhelpers.contrib.openstack.amulet.deployment import (
     OpenStackAmuletDeployment
@@ -52,11 +50,10 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
     """Amulet tests on a basic nova compute deployment."""
 
     def __init__(self, series=None, openstack=None, source=None,
-                 git=False, stable=False):
+                 stable=False):
         """Deploy the entire test environment."""
         super(NovaBasicDeployment, self).__init__(series, openstack,
                                                   source, stable)
-        self.git = git
         self._add_services()
         self._add_relations()
         self._configure_services()
@@ -137,41 +134,6 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
                        'enable-live-migration': 'False',
                        'aa-profile-mode': 'enforce'}
         nova_cc_config = {}
-        if self.git:
-            amulet_http_proxy = os.environ.get('AMULET_HTTP_PROXY')
-
-            reqs_repo = 'git://github.com/openstack/requirements'
-            neutron_repo = 'git://github.com/openstack/neutron'
-            nova_repo = 'git://github.com/openstack/nova'
-            if self._get_openstack_release() == self.trusty_icehouse:
-                reqs_repo = 'git://github.com/coreycb/requirements'
-                neutron_repo = 'git://github.com/coreycb/neutron'
-                nova_repo = 'git://github.com/coreycb/nova'
-
-            branch = 'stable/' + self._get_openstack_release_string()
-
-            openstack_origin_git = {
-                'repositories': [
-                    {'name': 'requirements',
-                     'repository': reqs_repo,
-                     'branch': branch},
-                    {'name': 'neutron',
-                     'repository': neutron_repo,
-                     'branch': branch},
-                    {'name': 'nova',
-                     'repository': nova_repo,
-                     'branch': branch},
-                ],
-                'directory': '/mnt/openstack-git',
-                'http_proxy': amulet_http_proxy,
-                'https_proxy': amulet_http_proxy,
-            }
-            nova_config['openstack-origin-git'] = \
-                yaml.dump(openstack_origin_git)
-
-            nova_cc_config['openstack-origin-git'] = \
-                yaml.dump(openstack_origin_git)
-
         if self._get_openstack_release() >= self.xenial_ocata:
             nova_cc_config['network-manager'] = 'Neutron'
 
