@@ -13,3 +13,4 @@ tests/cirros-*-disk.img
 .idea
 .stestr
 __pycache__
+func-results.json
