@@ -488,7 +488,8 @@ def lxc_changed():
         CONFIGS.write(NOVA_CONF)
 
 
-@hooks.hook('nova-designate-relation-changed')
+@hooks.hook('nova-designate-relation-changed',
+            'nova-designate-relation-broken')
 @restart_on_change(restart_map())
 def designate_changed():
     CONFIGS.write(NOVA_CONF)
