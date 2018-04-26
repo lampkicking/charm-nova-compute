@@ -77,6 +77,7 @@ TO_PATCH = [
     'update_nrpe_config',
     'network_manager',
     'libvirt_daemon',
+    'configure_local_ephemeral_storage',
     # misc_utils
     'ensure_ceph_keyring',
     'execd_preinstall',
@@ -133,6 +134,7 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.assertTrue(self.do_openstack_upgrade.called)
         neutron_plugin_joined.assert_called_with('rid1', remote_restart=True)
         ceph_changed.assert_called_with(rid='ceph:0', unit='ceph/0')
+        self.configure_local_ephemeral_storage.assert_called_once_with()
 
     def test_config_changed_with_openstack_upgrade_action(self):
         self.openstack_upgrade_available.return_value = True
@@ -708,3 +710,22 @@ class NovaComputeRelationsTests(CharmTestCase):
             group='nova',
             key='mykey'
         )
+
+    def test_secrets_storage_relation_joined(self):
+        self.get_relation_ip.return_value = '10.23.1.2'
+        self.gethostname.return_value = 'testhost'
+        hooks.secrets_storage_joined()
+        self.get_relation_ip.assert_called_with('secrets-storage')
+        self.relation_set.assert_called_with(
+            relation_id=None,
+            secret_backend='charm-vaultlocker',
+            isolated=True,
+            access_address='10.23.1.2',
+            hostname='testhost'
+        )
+        self.gethostname.assert_called_once_with()
+
+    def test_secrets_storage_relation_changed(self,):
+        self.relation_get.return_value = None
+        hooks.secrets_storage_changed()
+        self.configure_local_ephemeral_storage.assert_called_once_with()

@@ -24,7 +24,8 @@ from mock import (
 )
 from test_utils import (
     CharmTestCase,
-    patch_open
+    patch_open,
+    TestKV,
 )
 
 
@@ -55,6 +56,16 @@ TO_PATCH = [
     'Fstab',
     'os_application_version_set',
     'lsb_release',
+    'storage_list',
+    'storage_get',
+    'vaultlocker',
+    'kv',
+    'check_call',
+    'mkfs_xfs',
+    'is_block_device',
+    'is_device_mounted',
+    'fstab_add',
+    'mount',
 ]
 
 
@@ -65,6 +76,8 @@ class NovaComputeUtilsTests(CharmTestCase):
         self.config.side_effect = self.test_config.get
         self.charm_dir.return_value = 'mycharm'
         self.lsb_release.return_value = {'DISTRIB_CODENAME': 'precise'}
+        self.test_kv = TestKV()
+        self.kv.return_value = self.test_kv
 
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'network_manager')
@@ -803,3 +816,139 @@ class NovaComputeUtilsTests(CharmTestCase):
             'DISTRIB_CODENAME': 'xenial'
         }
         self.assertEqual(utils.libvirt_daemon(), utils.LIBVIRT_BIN_DAEMON)
+
+    @patch.object(utils, 'os')
+    def test_determine_block_device(self, mock_os):
+        self.test_config.set('ephemeral-device', '/dev/sdd')
+        mock_os.path.exists.return_value = True
+        self.assertEqual(utils.determine_block_device(), '/dev/sdd')
+        self.config.assert_called_with('ephemeral-device')
+
+    def test_determine_block_device_storage(self):
+        _test_devices = {
+            'a': '/dev/bcache0'
+        }
+        self.storage_list.side_effect = _test_devices.keys()
+        self.storage_get.side_effect = lambda _, key: _test_devices.get(key)
+        self.assertEqual(utils.determine_block_device(), '/dev/bcache0')
+        self.config.assert_called_with('ephemeral-device')
+        self.storage_get.assert_called_with('location', 'a')
+        self.storage_list.assert_called_with('ephemeral-device')
+
+    def test_determine_block_device_none(self):
+        self.storage_list.return_value = []
+        self.assertEqual(utils.determine_block_device(), None)
+        self.config.assert_called_with('ephemeral-device')
+        self.storage_list.assert_called_with('ephemeral-device')
+
+    @patch.object(utils, 'uuid')
+    @patch.object(utils, 'determine_block_device')
+    def test_configure_local_ephemeral_storage_encrypted(
+            self,
+            determine_block_device,
+            uuid):
+        determine_block_device.return_value = '/dev/sdb'
+        uuid.uuid4.return_value = 'test'
+
+        mock_context = MagicMock()
+        mock_context.complete = True
+        mock_context.return_value = 'test_context'
+
+        self.test_config.set('encrypt', True)
+        self.vaultlocker.VaultKVContext.return_value = mock_context
+        self.is_block_device.return_value = True
+        self.is_device_mounted.return_value = False
+
+        utils.configure_local_ephemeral_storage()
+
+        self.mkfs_xfs.assert_called_with(
+            '/dev/mapper/crypt-test',
+            force=True
+        )
+        self.check_call.assert_has_calls([
+            call(['vaultlocker', 'encrypt',
+                  '--uuid', 'test', '/dev/sdb']),
+            call(['chown', '-R', 'nova:nova',
+                  '/var/lib/nova/instances']),
+            call(['chmod', '-R', '0755',
+                  '/var/lib/nova/instances'])
+        ])
+        self.mount.assert_called_with(
+            '/dev/mapper/crypt-test',
+            '/var/lib/nova/instances',
+            filesystem='xfs')
+        self.fstab_add.assert_called_with(
+            '/dev/mapper/crypt-test',
+            '/var/lib/nova/instances',
+            'xfs',
+            options='defaults,nofail,'
+            'x-systemd.requires=vaultlocker-decrypt@test.service,'
+            'comment=vaultlocker'
+        )
+        self.assertTrue(self.test_kv.get('storage-configured'))
+        self.vaultlocker.write_vaultlocker_conf.assert_called_with(
+            'test_context',
+            priority=80
+        )
+
+    @patch.object(utils, 'uuid')
+    @patch.object(utils, 'determine_block_device')
+    def test_configure_local_ephemeral_storage(self,
+                                               determine_block_device,
+                                               uuid):
+        determine_block_device.return_value = '/dev/sdb'
+        uuid.uuid4.return_value = 'test'
+
+        mock_context = MagicMock()
+        mock_context.complete = False
+        mock_context.return_value = {}
+
+        self.test_config.set('encrypt', False)
+        self.vaultlocker.VaultKVContext.return_value = mock_context
+        self.is_block_device.return_value = True
+        self.is_device_mounted.return_value = False
+
+        utils.configure_local_ephemeral_storage()
+
+        self.mkfs_xfs.assert_called_with(
+            '/dev/sdb',
+            force=True
+        )
+        self.check_call.assert_has_calls([
+            call(['chown', '-R', 'nova:nova',
+                  '/var/lib/nova/instances']),
+            call(['chmod', '-R', '0755',
+                  '/var/lib/nova/instances'])
+        ])
+        self.mount.assert_called_with(
+            '/dev/sdb',
+            '/var/lib/nova/instances',
+            filesystem='xfs')
+        self.fstab_add.assert_called_with(
+            '/dev/sdb',
+            '/var/lib/nova/instances',
+            'xfs',
+            options=None
+        )
+        self.assertTrue(self.test_kv.get('storage-configured'))
+        self.vaultlocker.write_vaultlocker_conf.assert_not_called()
+
+    def test_configure_local_ephemeral_storage_done(self):
+        self.test_kv.set('storage-configured', True)
+
+        mock_context = MagicMock()
+        mock_context.complete = True
+        mock_context.return_value = 'test_context'
+
+        self.test_config.set('encrypt', True)
+        self.vaultlocker.VaultKVContext.return_value = mock_context
+
+        utils.configure_local_ephemeral_storage()
+
+        # NOTE: vaultlocker conf should always be re-written to
+        #       pickup any changes to secret_id over time.
+        self.vaultlocker.write_vaultlocker_conf.assert_called_with(
+            'test_context',
+            priority=80
+        )
+        self.is_block_device.assert_not_called()

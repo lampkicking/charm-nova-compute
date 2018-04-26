@@ -122,6 +122,23 @@ class TestRelation(object):
         return None
 
 
+class TestKV(dict):
+
+    def __init__(self):
+        super(TestKV, self).__init__()
+        self.flushed = False
+        self.data = {}
+
+    def get(self, attribute, default=None):
+        return self.data.get(attribute, default)
+
+    def set(self, attribute, value):
+        self.data[attribute] = value
+
+    def flush(self):
+        self.flushed = True
+
+
 @contextmanager
 def patch_open():
     '''Patch open() to allow mocking both open() itself and the file that is

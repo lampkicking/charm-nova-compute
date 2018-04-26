@@ -137,6 +137,9 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         nova_config = {'config-flags': 'auto_assign_floating_ip=False',
                        'enable-live-migration': 'False',
                        'aa-profile-mode': 'enforce'}
+        if self._get_openstack_release() > self.trusty_mitaka:
+            nova_config.update({'ephemeral-device': '/dev/vdb',
+                                'ephemeral-unmount': '/mnt'})
         nova_cc_config = {}
         if self._get_openstack_release() >= self.xenial_ocata:
             nova_cc_config['network-manager'] = 'Neutron'

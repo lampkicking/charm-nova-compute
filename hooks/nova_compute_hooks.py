@@ -14,11 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
+import json
 import platform
 import sys
 import uuid
 import yaml
 import os
+import subprocess
 
 
 import charmhelpers.core.unitdata as unitdata
@@ -42,12 +45,15 @@ from charmhelpers.core.templating import (
 )
 from charmhelpers.core.host import (
     service_restart,
+    write_file,
+    umount,
 )
 from charmhelpers.fetch import (
     apt_install,
     apt_purge,
     apt_update,
     filter_installed_packages,
+    add_source,
 )
 
 from charmhelpers.contrib.openstack.utils import (
@@ -94,6 +100,7 @@ from nova_compute_utils import (
     network_manager,
     libvirt_daemon,
     LIBVIRT_TYPES,
+    configure_local_ephemeral_storage,
 )
 
 from charmhelpers.contrib.network.ip import (
@@ -116,6 +123,8 @@ from charmhelpers.contrib.hardening.harden import harden
 
 from socket import gethostname
 
+import charmhelpers.contrib.openstack.vaultlocker as vaultlocker
+
 hooks = Hooks()
 CONFIGS = register_configs()
 MIGRATION_AUTH_TYPES = ["ssh"]
@@ -137,6 +146,9 @@ def install():
 @restart_on_change(restart_map())
 @harden()
 def config_changed():
+    if config('ephemeral-unmount'):
+        umount(config('ephemeral-unmount'), persist=True)
+
     if config('prefer-ipv6'):
         status_set('maintenance', 'configuring ipv6')
         assert_charm_supports_ipv6()
@@ -216,6 +228,20 @@ def config_changed():
             config('multi-host').lower() == 'yes'):
         NovaAPIAppArmorContext().setup_aa_profile()
         NovaNetworkAppArmorContext().setup_aa_profile()
+
+    install_vaultlocker()
+
+    configure_local_ephemeral_storage()
+
+
+def install_vaultlocker():
+    """Determine whether vaultlocker is required and install"""
+    if config('encrypt'):
+        installed = len(filter_installed_packages(['vaultlocker'])) == 0
+        if not installed:
+            add_source('ppa:openstack-charmers/vaultlocker')
+            apt_update(fatal=True)
+            apt_install('vaultlocker', fatal=True)
 
 
 @hooks.hook('amqp-relation-joined')
@@ -508,6 +534,31 @@ def ceph_access(rid=None, unit=None):
         ensure_ceph_keyring(service=remote_service,
                             user='nova', group='nova',
                             key=key)
+
+
+@hooks.hook('secrets-storage-relation-joined')
+def secrets_storage_joined(relation_id=None):
+    relation_set(relation_id=relation_id,
+                 secret_backend=vaultlocker.VAULTLOCKER_BACKEND,
+                 isolated=True,
+                 access_address=get_relation_ip('secrets-storage'),
+                 hostname=gethostname())
+
+
+@hooks.hook('secrets-storage-relation-changed')
+def secrets_storage_changed():
+    vault_ca = relation_get('vault_ca')
+    if vault_ca:
+        vault_ca = base64.decodestring(json.loads(vault_ca).encode())
+        write_file('/usr/local/share/ca-certificates/vault-ca.crt',
+                   vault_ca, perms=0o644)
+        subprocess.check_call(['update-ca-certificates', '--fresh'])
+    configure_local_ephemeral_storage()
+
+
+@hooks.hook('storage.real')
+def storage_changed():
+    configure_local_ephemeral_storage()
 
 
 @hooks.hook('update-status')

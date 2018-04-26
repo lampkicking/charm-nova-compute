@@ -17,6 +17,7 @@ import re
 import pwd
 import subprocess
 import platform
+import uuid
 
 from itertools import chain
 from base64 import b64decode
@@ -40,6 +41,8 @@ from charmhelpers.core.host import (
     lsb_release,
     rsync,
     CompareHostReleases,
+    mount,
+    fstab_add,
 )
 
 from charmhelpers.core.hookenv import (
@@ -53,6 +56,8 @@ from charmhelpers.core.hookenv import (
     DEBUG,
     INFO,
     WARNING,
+    storage_list,
+    storage_get,
 )
 
 from charmhelpers.core.decorators import retry_on_exception
@@ -98,6 +103,16 @@ from nova_compute_context import (
     NovaComputeAvailabilityZoneContext,
 )
 
+import charmhelpers.contrib.openstack.vaultlocker as vaultlocker
+
+from charmhelpers.core.unitdata import kv
+
+from charmhelpers.contrib.storage.linux.utils import (
+    is_block_device,
+    is_device_mounted,
+    mkfs_xfs,
+)
+
 CA_CERT_PATH = '/usr/local/share/ca-certificates/keystone_juju_ca_cert.crt'
 
 TEMPLATES = 'templates/'
@@ -108,6 +123,7 @@ BASE_PACKAGES = [
     'librbd1',  # bug 1440953
     'python-six',
     'python-psutil',
+    'xfsprogs',
 ]
 
 VERSION_PACKAGE = 'nova-common'
@@ -157,7 +173,9 @@ BASE_RESOURCE_MAP = {
                      context.VolumeAPIContext('nova-common'),
                      SerialConsoleContext(),
                      NovaComputeAvailabilityZoneContext(),
-                     context.WorkerConfigContext()],
+                     context.WorkerConfigContext(),
+                     vaultlocker.VaultKVContext(
+                         vaultlocker.VAULTLOCKER_BACKEND)],
     },
     NOVA_API_AA_PROFILE_PATH: {
         'services': ['nova-api'],
@@ -717,6 +735,8 @@ def get_optional_relations():
         optional_interfaces['neutron-plugin'] = ['neutron-plugin']
     if relation_ids('shared-db'):
         optional_interfaces['database'] = ['shared-db']
+    if config('encrypt'):
+        optional_interfaces['vault'] = ['secrets-storage']
     return optional_interfaces
 
 
@@ -787,3 +807,101 @@ def _pause_resume_helper(f, configs):
     f(assess_status_func(configs),
       services=services(),
       ports=None)
+
+
+def determine_block_device():
+    """Determine the block device to use for ephemeral storage
+
+    :returns: Block device to use for storage
+    :rtype: str or None if not configured"""
+    config_dev = config('ephemeral-device')
+
+    if config_dev and os.path.exists(config_dev):
+        return config_dev
+
+    storage_ids = storage_list('ephemeral-device')
+    storage_devs = [storage_get('location', s) for s in storage_ids]
+
+    if storage_devs:
+        return storage_devs[0]
+
+    return None
+
+
+def configure_local_ephemeral_storage():
+    """Configure local block device for use as ephemeral instance storage"""
+    # Preflight check vault relation if encryption is enabled
+    vault_kv = vaultlocker.VaultKVContext(
+        secret_backend=vaultlocker.VAULTLOCKER_BACKEND
+    )
+    context = vault_kv()
+    encrypt = config('encrypt')
+    if encrypt and not vault_kv.complete:
+        log("Encryption requested but vault relation not complete",
+            level=DEBUG)
+        return
+    elif encrypt and vault_kv.complete:
+        # NOTE: only write vaultlocker configuration once relation is complete
+        #       otherwise we run the chance of an empty configuration file
+        #       being installed on a machine with other vaultlocker based
+        #       services
+        vaultlocker.write_vaultlocker_conf(context, priority=80)
+
+    db = kv()
+    storage_configured = db.get('storage-configured', False)
+    if storage_configured:
+        log("Ephemeral storage already configured, skipping",
+            level=DEBUG)
+        return
+
+    dev = determine_block_device()
+
+    if not dev:
+        log('No block device configuration found, skipping',
+            level=DEBUG)
+        return
+
+    if not is_block_device(dev):
+        log("Device '{}' is not a block device, "
+            "unable to configure storage".format(dev),
+            level=DEBUG)
+        return
+
+    # NOTE: this deals with a dm-crypt'ed block device already in
+    #       use
+    if is_device_mounted(dev):
+        log("Device '{}' is already mounted, "
+            "unable to configure storage".format(dev),
+            level=DEBUG)
+        return
+
+    options = None
+    if encrypt:
+        dev_uuid = str(uuid.uuid4())
+        check_call(['vaultlocker', 'encrypt',
+                    '--uuid', dev_uuid,
+                    dev])
+        dev = '/dev/mapper/crypt-{}'.format(dev_uuid)
+        options = ','.join([
+            "defaults",
+            "nofail",
+            ("x-systemd.requires="
+             "vaultlocker-decrypt@{uuid}.service".format(uuid=dev_uuid)),
+            "comment=vaultlocker",
+        ])
+
+    # If not cleaned and in use, mkfs should fail.
+    mkfs_xfs(dev, force=True)
+
+    mountpoint = '/var/lib/nova/instances'
+    filesystem = "xfs"
+    mount(dev, mountpoint, filesystem=filesystem)
+    fstab_add(dev, mountpoint, filesystem, options=options)
+
+    check_call(['chown', '-R', 'nova:nova', mountpoint])
+    check_call(['chmod', '-R', '0755', mountpoint])
+
+    # NOTE: record preparation of device - this ensures that ephemeral
+    #       storage is never reconfigured by mistake, losing instance disks
+    db.set('storage-configured', True)
+    db.flush()

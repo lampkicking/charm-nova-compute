@@ -388,4 +388,28 @@ options:
       presenting the disk via device mapper (/dev/mapper/XX) to the VM instead
       of a single path (/dev/disk/by-path/XX). If changed after deployment,
       each VM will require a full stop/start for changes to take affect.
+  ephemeral-device:
+    type: string
+    default:
+    description: |
+      Block devices to use for storage of ephermeral disks to support nova
+      instances; generally used in-conjunction with 'encrypt' to support
+      data-at-rest encryption of instance direct attached storage volumes.
+  encrypt:
+    default: False
+    type: boolean
+    description: |
+      Encrypt block devices used for nova instances using dm-crypt, making use
+      of vault for encryption key management; requires a relation to vault.
+  ephemeral-unmount:
+    type: string
+    default:
+    description: |
+      Cloud instances provide ephermeral storage which is normally mounted
+      on /mnt.
+      .
+      Setting this option to the path of the ephemeral mountpoint will force
+      an unmount of the corresponding device so that it can be used for as the
+      backing store for local instances.  This is useful for testing purposes
+      (cloud deployment is not a typical use case).
 
