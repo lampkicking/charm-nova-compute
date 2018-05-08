@@ -247,8 +247,8 @@ options:
     type: string
     default:
     description: |
-      Tell Nova which libvirt image backend to use. Supported backends are rbd,
-      lvm and qcow2. If no backend is specified, the Nova default (qcow2) is
+      Tell Nova which libvirt image backend to use. Supported backends are rbd
+      and qcow2. If no backend is specified, the Nova default (qcow2) is
       used. Note that rbd imagebackend is only supported with >= Juno.
   force-raw-images:
     type: boolean
