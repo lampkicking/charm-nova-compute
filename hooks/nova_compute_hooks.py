@@ -488,13 +488,6 @@ def lxc_changed():
         CONFIGS.write(NOVA_CONF)
 
 
-@hooks.hook('nova-designate-relation-changed',
-            'nova-designate-relation-broken')
-@restart_on_change(restart_map())
-def designate_changed():
-    CONFIGS.write(NOVA_CONF)
-
-
 @hooks.hook('ceph-access-relation-changed')
 def ceph_access(rid=None, unit=None):
     '''Setup libvirt secret for specific ceph backend access'''

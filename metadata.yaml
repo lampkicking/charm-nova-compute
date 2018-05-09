@@ -32,8 +32,6 @@ requires:
     interface: glance
   ceph:
     interface: ceph-client
-  nova-designate:
-    interface: nova-designate
   lxd:
     interface: containers
     scope: container
