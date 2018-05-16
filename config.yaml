@@ -158,6 +158,23 @@ options:
       deployed to. This can be accomplished by setting kernel parameters on
       capable machines in MAAS, tagging them and using these tags as
       constraints in the model.
+  pci-alias:
+    type: string
+    default:
+    description: |
+      The pci-passthrough-whitelist option of nova-compute charm is used for
+      specifying which PCI devices are allowed passthrough. pci-alias is more
+      a convenience that can be used in conjunction with Nova flavor properties
+      to automatically assign required PCI devices to new instances. You could,
+      for example, have a GPU flavor or a SR-IOV flavor:
+      .
+        pci-alias='{"vendor_id":"8086","product_id":"10ca","name":"a1"}'
+      .
+      This configures a new PCI alias 'a1' which will request a PCI device with
+      a vendor id of 0x8086 and a product id of 10ca.
+      .
+      For more information about the syntax of pci_alias, refer to
+      https://docs.openstack.org/ocata/config-reference/compute/config-options.html
   reserved-host-memory:
     type: int
     default: 512
