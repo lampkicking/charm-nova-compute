@@ -70,6 +70,7 @@
   /sys/devices/system/node/** r,
   /sys/devices/virtual/block/nbd*/ r,
   /sys/devices/virtual/net/** w,
+  /sys/class/fc_host/** r,
   /tmp/{,**} rw,
   /usr/bin/ r,
   /usr/bin/* rix,
