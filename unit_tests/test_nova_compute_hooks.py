@@ -509,9 +509,15 @@ class NovaComputeRelationsTests(CharmTestCase):
                                             weight=28,
                                             group='vms')
         mock_request_access.assert_has_calls([
-            call(name='volumes', permission='rwx'),
-            call(name='images', permission='rwx'),
-            call(name='vms', permission='rwx'),
+            call(name='volumes',
+                 object_prefix_permissions={'class-read': ['rbd_children']},
+                 permission='rwx'),
+            call(name='images',
+                 object_prefix_permissions={'class-read': ['rbd_children']},
+                 permission='rwx'),
+            call(name='vms',
+                 object_prefix_permissions={'class-read': ['rbd_children']},
+                 permission='rwx'),
         ])
 
     @patch.object(hooks, 'service_restart_handler')
