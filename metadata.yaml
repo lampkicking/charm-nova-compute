@@ -44,6 +44,8 @@ requires:
     scope: container
   ceph-access:
     interface: cinder-ceph-key
+  cloud-credentials:
+    interface: keystone-credentials
   secrets-storage:
     interface: vault-kv
 peers:

@@ -30,6 +30,7 @@ from charmhelpers.core.hookenv import (
     Hooks,
     config,
     is_relation_made,
+    local_unit,
     log,
     relation_ids,
     remote_service_name,
@@ -546,6 +547,18 @@ def secrets_storage_changed():
 @hooks.hook('storage.real')
 def storage_changed():
     configure_local_ephemeral_storage()
+
+
+@hooks.hook('cloud-credentials-relation-joined')
+def cloud_credentials_joined():
+    svc_name = local_unit().split('/')[0].replace('-', '_')
+    relation_set(username=svc_name)
+
+
+@hooks.hook('cloud-credentials-relation-changed')
+@restart_on_change(restart_map())
+def cloud_credentials_changed():
+    CONFIGS.write(NOVA_CONF)
 
 
 @hooks.hook('update-status')

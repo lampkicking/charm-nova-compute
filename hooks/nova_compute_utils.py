@@ -175,7 +175,9 @@ BASE_RESOURCE_MAP = {
                      NovaComputeAvailabilityZoneContext(),
                      context.WorkerConfigContext(),
                      vaultlocker.VaultKVContext(
-                         vaultlocker.VAULTLOCKER_BACKEND)],
+                         vaultlocker.VAULTLOCKER_BACKEND),
+                     context.IdentityCredentialsContext(
+                         rel_name='cloud-credentials')],
     },
     NOVA_API_AA_PROFILE_PATH: {
         'services': ['nova-api'],

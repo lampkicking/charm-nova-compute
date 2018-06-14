@@ -38,6 +38,7 @@ TO_PATCH = [
     # charmhelpers.core.hookenv
     'Hooks',
     'config',
+    'local_unit',
     'log',
     'is_relation_made',
     'relation_get',
@@ -705,3 +706,13 @@ class NovaComputeRelationsTests(CharmTestCase):
         self.relation_get.return_value = None
         hooks.secrets_storage_changed()
         self.configure_local_ephemeral_storage.assert_called_once_with()
+
+    def test_cloud_credentials_joined(self):
+        self.local_unit.return_value = 'nova-compute-cell1/2'
+        hooks.cloud_credentials_joined()
+        self.relation_set.assert_called_with(username='nova_compute_cell1')
+
+    @patch.object(hooks, 'CONFIGS')
+    def test_cloud_credentials_changed(self, mock_CONFIGS):
+        hooks.cloud_credentials_changed()
+        mock_CONFIGS.write.assert_called_with('/etc/nova/nova.conf')
