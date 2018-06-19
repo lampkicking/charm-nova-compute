@@ -252,6 +252,7 @@ LIBVIRT_URIS = {
 REQUIRED_INTERFACES = {
     'messaging': ['amqp'],
     'image': ['image-service'],
+    'compute': ['cloud-compute'],
 }
 
 

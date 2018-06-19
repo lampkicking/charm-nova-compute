@@ -474,6 +474,27 @@ class CloudComputeContext(context.OSContextGenerator):
 
         return neutron_ctxt
 
+    def neutron_context_no_auth_data(self):
+        """If the charm has a cloud-credentials relation then a subset
+        of data is needed to complete this context."""
+        neutron_ctxt = {'neutron_url': None}
+        for rid in relation_ids('cloud-compute'):
+            for unit in related_units(rid):
+                rel = {'rid': rid, 'unit': unit}
+
+                url = _neutron_url(**rel)
+                if not url:
+                    # only bother with units that have a neutron url set.
+                    continue
+
+                neutron_ctxt = {
+                    'neutron_auth_strategy': 'keystone',
+                    'neutron_plugin': _neutron_plugin(),
+                    'neutron_url': url,
+                }
+
+        return neutron_ctxt
+
     def volume_context(self):
         # provide basic validation that the volume manager is supported on the
         # given openstack release (nova-volume is only supported for E and F)
@@ -498,6 +519,10 @@ class CloudComputeContext(context.OSContextGenerator):
         elif self.network_manager == 'neutron':
             ctxt = self.neutron_context()
 
+            # If charm has a cloud-credentials relation then auth data is not
+            # needed.
+            if relation_ids('cloud-credentials') and not ctxt:
+                ctxt = self.neutron_context_no_auth_data()
         _save_flag_file(path='/etc/nova/nm.conf', data=self.network_manager)
 
         log('Generated config context for %s network manager.' %
@@ -520,22 +545,28 @@ class CloudComputeContext(context.OSContextGenerator):
         ctxt = {}
 
         net_manager = self.network_manager_context()
+
         if net_manager:
-            ctxt['network_manager'] = self.network_manager
-            ctxt['network_manager_config'] = net_manager
-            # This is duplicating information in the context to enable
-            # common keystone fragment to be used in template
-            ctxt['service_protocol'] = net_manager.get('service_protocol')
-            ctxt['service_host'] = net_manager.get('keystone_host')
-            ctxt['service_port'] = net_manager.get('service_port')
-            ctxt['admin_tenant_name'] = net_manager.get(
-                'neutron_admin_tenant_name')
-            ctxt['admin_user'] = net_manager.get('neutron_admin_username')
-            ctxt['admin_password'] = net_manager.get('neutron_admin_password')
-            ctxt['auth_protocol'] = net_manager.get('auth_protocol')
-            ctxt['auth_host'] = net_manager.get('keystone_host')
-            ctxt['auth_port'] = net_manager.get('auth_port')
-            ctxt['api_version'] = net_manager.get('api_version')
+            if net_manager.get('neutron_admin_password'):
+                ctxt['network_manager'] = self.network_manager
+                ctxt['network_manager_config'] = net_manager
+                # This is duplicating information in the context to enable
+                # common keystone fragment to be used in template
+                ctxt['service_protocol'] = net_manager.get('service_protocol')
+                ctxt['service_host'] = net_manager.get('keystone_host')
+                ctxt['service_port'] = net_manager.get('service_port')
+                ctxt['admin_tenant_name'] = net_manager.get(
+                    'neutron_admin_tenant_name')
+                ctxt['admin_user'] = net_manager.get('neutron_admin_username')
+                ctxt['admin_password'] = net_manager.get(
+                    'neutron_admin_password')
+                ctxt['auth_protocol'] = net_manager.get('auth_protocol')
+                ctxt['auth_host'] = net_manager.get('keystone_host')
+                ctxt['auth_port'] = net_manager.get('auth_port')
+                ctxt['api_version'] = net_manager.get('api_version')
+            else:
+                ctxt['network_manager'] = self.network_manager
+                ctxt['network_manager_config'] = net_manager
 
         net_dev_mtu = config('network-device-mtu')
         if net_dev_mtu:
@@ -552,7 +583,10 @@ class CloudComputeContext(context.OSContextGenerator):
         if region:
             ctxt['region'] = region
 
-        return ctxt
+        if self.context_complete(ctxt):
+            return ctxt
+
+        return {}
 
 
 class InstanceConsoleContext(context.OSContextGenerator):

@@ -144,16 +144,6 @@ class NovaComputeContextTests(CharmTestCase):
                 'ec2_dmz_host': 'novaapihost',
                 'flat_interface': 'eth1'
             },
-            'service_protocol': None,
-            'service_host': None,
-            'service_port': None,
-            'admin_tenant_name': None,
-            'admin_user': None,
-            'admin_password': None,
-            'auth_protocol': None,
-            'auth_host': None,
-            'auth_port': None,
-            'api_version': None,
         }
         self.assertEqual(ex_ctxt, cloud_compute())
 
