@@ -15,6 +15,7 @@
 import uuid
 import os
 import platform
+import shutil
 
 from charmhelpers.core.unitdata import kv
 from charmhelpers.contrib.openstack import context
@@ -326,6 +327,7 @@ class NovaComputeCephContext(context.CephContext):
             asok_path = '/var/run/ceph/'
             if not os.path.isdir(asok_path):
                 os.mkdir(asok_path)
+                shutil.chown(asok_path, group='kvm')
 
         elif rbd_cache.lower() == "disabled":
             ctxt['rbd_client_cache_settings'] = {'rbd cache': 'false'}

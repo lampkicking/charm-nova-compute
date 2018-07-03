@@ -22,6 +22,8 @@ import uuid
 import yaml
 import os
 import subprocess
+import grp
+import shutil
 
 
 import charmhelpers.core.unitdata as unitdata
@@ -412,6 +414,15 @@ def upgrade_charm():
 
     if is_relation_made('nrpe-external-master'):
         update_nrpe_config()
+
+    # Fix previously wrongly created path permissions
+    # LP: https://bugs.launchpad.net/charm-cinder-ceph/+bug/1779676
+    asok_path = '/var/run/ceph/'
+    gid = grp.getgrnam("kvm").gr_gid
+    if gid and os.path.isdir(asok_path) and gid != os.stat(asok_path).st_gid:
+        log("{} not owned by group 'kvm', fixing permissions."
+            .format(asok_path))
+        shutil.chown(asok_path, group='kvm')
 
 
 @hooks.hook('nova-ceilometer-relation-changed')
