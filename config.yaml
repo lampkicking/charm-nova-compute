@@ -259,6 +259,11 @@ options:
       Set to a named libvirt CPU model (see names listed in
       /usr/share/libvirt/cpu_map.xml). Only has effect if cpu_mode='custom' and
       virt_type='kvm|qemu'.
+  cpu-model-extra-flags:
+    type: string
+    default:
+    description: |
+      Space delimited list of specific CPU flags for libvirt.
   # Storage config
   libvirt-image-backend:
     type: string

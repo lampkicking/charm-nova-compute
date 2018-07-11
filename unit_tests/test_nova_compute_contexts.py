@@ -501,6 +501,14 @@ class NovaComputeContextTests(CharmTestCase):
         self.assertEqual(context.nova_metadata_requirement(),
                          (True, None))
 
+    def test_nova_compute_extra_flags(self):
+        self.test_config.set('cpu-model-extra-flags', 'pcid vmx pdpe1gb')
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'bionic'}
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(libvirt()['cpu_model_extra_flags'],
+                         'pcid, vmx, pdpe1gb')
+
 
 class SerialConsoleContextTests(CharmTestCase):
 

@@ -210,6 +210,10 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
         if config('cpu-model'):
             ctxt['cpu_model'] = config('cpu-model')
 
+        if config('cpu-model-extra-flags'):
+            ctxt['cpu_model_extra_flags'] = ', '.join(
+                config('cpu-model-extra-flags').split(' '))
+
         if config('hugepages'):
             ctxt['hugepages'] = True
             ctxt['kvm_hugepages'] = 1
