@@ -48,6 +48,7 @@ from charmhelpers.core.templating import (
 )
 from charmhelpers.core.host import (
     service_restart,
+    service_stop,
     write_file,
     umount,
 )
@@ -64,6 +65,8 @@ from charmhelpers.contrib.openstack.utils import (
     openstack_upgrade_available,
     is_unit_paused_set,
     pausable_restart_on_change as restart_on_change,
+    series_upgrade_prepare,
+    series_upgrade_complete,
 )
 
 from charmhelpers.contrib.storage.linux.ceph import (
@@ -104,6 +107,8 @@ from nova_compute_utils import (
     libvirt_daemon,
     LIBVIRT_TYPES,
     configure_local_ephemeral_storage,
+    pause_unit_helper,
+    resume_unit_helper,
 )
 
 from charmhelpers.contrib.network.ip import (
@@ -131,6 +136,7 @@ import charmhelpers.contrib.openstack.vaultlocker as vaultlocker
 hooks = Hooks()
 CONFIGS = register_configs()
 MIGRATION_AUTH_TYPES = ["ssh"]
+LIBVIRTD_PID = '/var/run/libvirtd.pid'
 
 
 @hooks.hook('install.real')
@@ -149,6 +155,11 @@ def install():
 @restart_on_change(restart_map())
 @harden()
 def config_changed():
+
+    if is_unit_paused_set():
+        log("Do not run config_changed when paused", "WARNING")
+        return
+
     if config('ephemeral-unmount'):
         umount(config('ephemeral-unmount'), persist=True)
 
@@ -576,6 +587,27 @@ def cloud_credentials_changed():
 @harden()
 def update_status():
     log('Updating status.')
+
+
+@hooks.hook('pre-series-upgrade')
+def pre_series_upgrade():
+    log("Running prepare series upgrade hook", "INFO")
+    series_upgrade_prepare(
+        pause_unit_helper, CONFIGS)
+
+
+@hooks.hook('post-series-upgrade')
+def post_series_upgrade():
+    log("Running complete series upgrade hook", "INFO")
+    service_stop('nova-compute')
+    service_stop('libvirt-bin')
+    # After package upgrade the service is broken and leaves behind a
+    # PID file which causes the service to fail to start.
+    # Remove this before restart
+    if os.path.exists(LIBVIRTD_PID):
+        os.unlink(LIBVIRTD_PID)
+    series_upgrade_complete(
+        resume_unit_helper, CONFIGS)
 
 
 def main():
