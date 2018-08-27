@@ -27,7 +27,6 @@ from charmhelpers.contrib.openstack.utils import CompareOpenStackReleases
 
 import keystoneclient
 from keystoneclient.v3 import client as keystone_client_v3
-import glanceclient
 from novaclient import client as nova_client
 from novaclient import exceptions
 
@@ -180,7 +179,7 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             openstack_release=self._get_openstack_release())
 
         # Authenticate admin with glance endpoint
-        self.glance = glanceclient.Client('1', session=self.keystone_session)
+        self.glance = u.authenticate_glance_admin(self.keystone)
 
         # Authenticate admin with nova endpoint
         self.nova = nova_client.Client(2, session=self.keystone_session)
