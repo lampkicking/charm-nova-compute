@@ -39,6 +39,9 @@ VIRSH_NET_LIST = """ Name                 State      Autostart     Persistent
 TO_PATCH = [
     'apt_install',
     'apt_update',
+    'apt_purge',
+    'apt_autoremove',
+    'filter_missing_packages',
     'config',
     'os_release',
     'log',
@@ -119,6 +122,7 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch('platform.machine')
     def test_determine_packages_neutron(self, machine, net_man,
                                         n_plugin, en_meta):
+        self.os_release.return_value = 'ocata'
         en_meta.return_value = (False, None)
         net_man.return_value = 'neutron'
         n_plugin.return_value = 'ovs'
@@ -132,9 +136,31 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
     @patch('platform.machine')
+    def test_determine_packages_neutron_rocky(self, machine, net_man,
+                                              n_plugin, en_meta):
+        self.os_release.return_value = 'rocky'
+        en_meta.return_value = (False, None)
+        net_man.return_value = 'neutron'
+        n_plugin.return_value = 'ovs'
+        machine.return_value = 'x86_64'
+        self.relation_ids.return_value = []
+        result = utils.determine_packages()
+        ex = (
+            [p for p in utils.BASE_PACKAGES
+             if not p.startswith('python-')] +
+            ['nova-compute-kvm'] +
+            utils.PY3_PACKAGES
+        )
+        self.assertEqual(ex, result)
+
+    @patch.object(utils, 'nova_metadata_requirement')
+    @patch.object(utils, 'neutron_plugin')
+    @patch.object(utils, 'network_manager')
+    @patch('platform.machine')
     def test_determine_packages_neutron_aarch64_xenial(self, machine,
                                                        net_man, n_plugin,
                                                        en_meta):
+        self.os_release.return_value = 'ocata'
         self.lsb_release.return_value = {
             'DISTRIB_CODENAME': 'xenial'
         }
@@ -154,6 +180,7 @@ class NovaComputeUtilsTests(CharmTestCase):
     def test_determine_packages_neutron_aarch64_trusty(self, machine,
                                                        net_man, n_plugin,
                                                        en_meta):
+        self.os_release.return_value = 'ocata'
         self.lsb_release.return_value = {
             'DISTRIB_CODENAME': 'trusty'
         }
@@ -172,6 +199,7 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch('platform.machine')
     def test_determine_packages_neutron_ceph(self, machine,
                                              net_man, n_plugin, en_meta):
+        self.os_release.return_value = 'ocata'
         en_meta.return_value = (False, None)
         net_man.return_value = 'neutron'
         n_plugin.return_value = 'ovs'
@@ -186,6 +214,7 @@ class NovaComputeUtilsTests(CharmTestCase):
     @patch.object(utils, 'network_manager')
     def test_determine_packages_metadata(self, net_man,
                                          n_plugin, en_meta):
+        self.os_release.return_value = 'ocata'
         en_meta.return_value = (True, None)
         net_man.return_value = 'bob'
         n_plugin.return_value = 'ovs'

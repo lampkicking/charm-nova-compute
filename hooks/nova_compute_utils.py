@@ -32,6 +32,9 @@ from charmhelpers.fetch import (
     apt_update,
     apt_upgrade,
     apt_install,
+    apt_purge,
+    apt_autoremove,
+    filter_missing_packages,
 )
 
 from charmhelpers.core.fstab import Fstab
@@ -124,6 +127,16 @@ BASE_PACKAGES = [
     'python-six',
     'python-psutil',
     'xfsprogs',
+]
+
+PY3_PACKAGES = [
+    'python3-nova',
+    'python3-memcache',
+]
+
+PURGE_PACKAGES = [
+    'python-nova',
+    'python-memcache',
 ]
 
 VERSION_PACKAGE = 'nova-common'
@@ -370,6 +383,9 @@ def determine_packages_arch():
 
 
 def determine_packages():
+    release = os_release('nova-common')
+    cmp_release = CompareOpenStackReleases(release)
+
     packages = [] + BASE_PACKAGES
 
     net_manager = network_manager()
@@ -393,7 +409,19 @@ def determine_packages():
 
     packages.extend(determine_packages_arch())
 
+    if cmp_release >= 'rocky':
+        packages = [p for p in packages if not p.startswith('python-')]
+        packages.extend(PY3_PACKAGES)
+
     return packages
+
+
+def determine_purge_packages():
+    '''Return a list of packages to purge for the current OS release'''
+    cmp_os_source = CompareOpenStackReleases(os_release('nova-common'))
+    if cmp_os_source >= 'rocky':
+        return PURGE_PACKAGES
+    return []
 
 
 def migration_enabled():
@@ -567,6 +595,13 @@ def do_openstack_upgrade(configs):
     apt_upgrade(options=dpkg_opts, fatal=True, dist=True)
     reset_os_release()
     apt_install(determine_packages(), fatal=True)
+
+    installed_packages = filter_missing_packages(
+        determine_purge_packages()
+    )
+    if installed_packages:
+        apt_purge(installed_packages, fatal=True)
+        apt_autoremove(purge=True, fatal=True)
 
     configs.set_release(openstack_release=new_os_rel)
     configs.write_all()
