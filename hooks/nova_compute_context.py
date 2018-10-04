@@ -51,6 +51,7 @@ from charmhelpers.contrib.network.ip import (
     get_relation_ip,
 )
 
+
 # This is just a label and it must be consistent across
 # nova-compute nodes to support live migration.
 CEPH_SECRET_UUID = '514c9fca-8cbe-11e2-9c52-3bc8c7819472'
@@ -84,6 +85,11 @@ def _save_flag_file(path, data):
 def _network_manager():
     from nova_compute_utils import network_manager as manager
     return manager()
+
+
+def _get_availability_zone():
+    from nova_compute_utils import get_availability_zone as get_az
+    return get_az()
 
 
 def _neutron_security_groups():
@@ -722,7 +728,5 @@ class NovaComputeAvailabilityZoneContext(context.OSContextGenerator):
 
     def __call__(self):
         ctxt = {}
-        if config('default-availability-zone'):
-            ctxt['default_availability_zone'] = config(
-                'default-availability-zone')
+        ctxt['default_availability_zone'] = _get_availability_zone()
         return ctxt

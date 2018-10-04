@@ -109,6 +109,7 @@ from nova_compute_utils import (
     configure_local_ephemeral_storage,
     pause_unit_helper,
     resume_unit_helper,
+    get_availability_zone,
 )
 
 from charmhelpers.contrib.network.ip import (
@@ -464,7 +465,7 @@ def update_nrpe_config():
 def neutron_plugin_joined(relid=None, remote_restart=False):
     rel_settings = {
         'hugepage_number': get_hugepage_number(),
-        'default_availability_zone': config('default-availability-zone')
+        'default_availability_zone': get_availability_zone()
     }
     if remote_restart:
         rel_settings['restart-trigger'] = str(uuid.uuid4())

@@ -981,3 +981,55 @@ class NovaComputeUtilsTests(CharmTestCase):
             priority=80
         )
         self.is_block_device.assert_not_called()
+
+    @patch.object(utils.os.environ, 'get')
+    def test_get_az_customize_with_env(self, os_environ_get_mock):
+        self.test_config.set('customize-failure-domain', True)
+        self.test_config.set('default-availability-zone', 'nova')
+
+        def os_environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': 'az1',
+            }[key]
+        os_environ_get_mock.side_effect = os_environ_get_side_effect
+        az = utils.get_availability_zone()
+        self.assertEqual('az1', az)
+
+    @patch.object(utils.os.environ, 'get')
+    def test_get_az_customize_without_env(self, os_environ_get_mock):
+        self.test_config.set('customize-failure-domain', True)
+        self.test_config.set('default-availability-zone', 'mynova')
+
+        def os_environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': '',
+            }[key]
+        os_environ_get_mock.side_effect = os_environ_get_side_effect
+        az = utils.get_availability_zone()
+        self.assertEqual('mynova', az)
+
+    @patch.object(utils.os.environ, 'get')
+    def test_get_az_no_customize_without_env(self, os_environ_get_mock):
+        self.test_config.set('customize-failure-domain', False)
+        self.test_config.set('default-availability-zone', 'nova')
+
+        def os_environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': '',
+            }[key]
+        os_environ_get_mock.side_effect = os_environ_get_side_effect
+        az = utils.get_availability_zone()
+        self.assertEqual('nova', az)
+
+    @patch.object(utils.os.environ, 'get')
+    def test_get_az_no_customize_with_env(self, os_environ_get_mock):
+        self.test_config.set('customize-failure-domain', False)
+        self.test_config.set('default-availability-zone', 'nova')
+
+        def os_environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': 'az1',
+            }[key]
+        os_environ_get_mock.side_effect = os_environ_get_side_effect
+        az = utils.get_availability_zone()
+        self.assertEqual('nova', az)

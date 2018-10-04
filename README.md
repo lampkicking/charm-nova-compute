@@ -43,6 +43,37 @@ different cephx keys and user names.
 See LP Bug [#1671422](https://bugs.launchpad.net/charm-cinder-ceph/+bug/1671422)
 for more information.
 
+Availability Zones
+==================
+
+There are two options to provide default_availability_zone config
+for nova nodes:
+
+  - default-availability-zone
+  - customize-failure-domain
+
+The order of precedence is as follows:
+
+  1. Information from a Juju provider (JUJU_AVAILABILITY_ZONE)
+     if customize-failure-domain is set to True and Juju
+     has set the JUJU_AVAILABILITY_ZONE to a non-empty value;
+  2. The value of default-availability-zone will be used
+     if customize-failure-domain is set to True but no
+     JUJU_AVAILABILITY_ZONE is provided via hook
+     context by the Juju provider;
+  3. Otherwise, the value of default-availability-zone
+     charm option will be used.
+
+The default_availability_zone in Nova affects scheduling if a
+given Nova node was not placed into an aggregate with an
+availability zone present as a property by an operator. Using
+customize-failure-domain is recommended as it provides AZ-aware
+scheduling out of the box if an operator specifies an AZ during
+instance creation.
+
+These options also affect the AZ propagated down to networking
+subordinates which is useful for AZ-aware Neutron agent scheduling.
+
 NFV support
 ===========
 

@@ -563,3 +563,68 @@ class SerialConsoleContextTests(CharmTestCase):
              'host_uuid': self.host_uuid,
              'force_raw_images': True,
              'reserved_host_memory': 512}, libvirt())
+
+
+class NovaComputeAvailabilityZoneContextTests(CharmTestCase):
+
+    def setUp(self):
+        super(NovaComputeAvailabilityZoneContextTests,
+              self).setUp(context, TO_PATCH)
+        self.os_release.return_value = 'kilo'
+
+    @patch('nova_compute_utils.config')
+    @patch('os.environ.get')
+    def test_availability_zone_no_juju_with_env(self, mock_get,
+                                                mock_config):
+        def environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': 'az1',
+            }[key]
+        mock_get.side_effect = environ_get_side_effect
+
+        def config_side_effect(key):
+            return {
+                'customize-failure-domain': False,
+                'default-availability-zone': 'nova',
+            }[key]
+
+        mock_config.side_effect = config_side_effect
+        az_context = context.NovaComputeAvailabilityZoneContext()
+        self.assertEqual(
+            {'default_availability_zone': 'nova'}, az_context())
+
+    @patch('nova_compute_utils.config')
+    @patch('os.environ.get')
+    def test_availability_zone_no_juju_no_env(self, mock_get,
+                                              mock_config):
+        def environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': '',
+            }[key]
+        mock_get.side_effect = environ_get_side_effect
+
+        def config_side_effect(key):
+            return {
+                'customize-failure-domain': False,
+                'default-availability-zone': 'nova',
+            }[key]
+
+        mock_config.side_effect = config_side_effect
+        az_context = context.NovaComputeAvailabilityZoneContext()
+
+        self.assertEqual(
+            {'default_availability_zone': 'nova'}, az_context())
+
+    @patch('os.environ.get')
+    def test_availability_zone_juju(self, mock_get):
+        def environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': 'az1',
+            }[key]
+        mock_get.side_effect = environ_get_side_effect
+
+        self.config.side_effect = self.test_config.get
+        self.test_config.set('customize-failure-domain', True)
+        az_context = context.NovaComputeAvailabilityZoneContext()
+        self.assertEqual(
+            {'default_availability_zone': 'az1'}, az_context())

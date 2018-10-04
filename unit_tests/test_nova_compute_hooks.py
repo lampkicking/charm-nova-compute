@@ -542,6 +542,29 @@ class NovaComputeRelationsTests(CharmTestCase):
             **expect_rel_settings
         )
 
+    @patch('os.environ.get')
+    @patch.object(hooks, 'get_hugepage_number')
+    def test_neutron_plugin_joined_relid_juju_az(self,
+                                                 get_hugepage_number,
+                                                 mock_env_get):
+        self.test_config.set('customize-failure-domain', True)
+
+        def environ_get_side_effect(key):
+            return {
+                'JUJU_AVAILABILITY_ZONE': 'az1',
+            }[key]
+        mock_env_get.side_effect = environ_get_side_effect
+        get_hugepage_number.return_value = None
+        hooks.neutron_plugin_joined(relid='relid23')
+        expect_rel_settings = {
+            'hugepage_number': None,
+            'default_availability_zone': 'az1',
+        }
+        self.relation_set.assert_called_with(
+            relation_id='relid23',
+            **expect_rel_settings
+        )
+
     @patch.object(hooks, 'get_hugepage_number')
     def test_neutron_plugin_joined_huge(self, get_hugepage_number):
         get_hugepage_number.return_value = 12

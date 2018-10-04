@@ -373,11 +373,24 @@ options:
       .
       This option determines the availability zone to be used when it is not
       specified in the VM creation request. If this option is not set, the
-      default availability zone 'nova' is used.
+      default availability zone 'nova' is used. If customize-failure-domain
+      is set to True, it will override this option only if an AZ is set by
+      the Juju provider. If JUJU_AVAILABILITY_ZONE is not set, the value
+      specified by this option will be used regardless of
+      customize-failure-domain's setting.
       .
       NOTE: Availability zones must be created manually using the
       'openstack aggregate create' command.
       .
+  customize-failure-domain:
+    type: boolean
+    default: False
+    description: |
+      Juju propagates availability zone information to charms from the
+      underlying machine provider such as MAAS and this option allows the
+      charm to use JUJU_AVAILABILITY_ZONE to set default_availability_zone for
+      Nova nodes. This option overrides the default-availability-zone charm
+      config setting only when the Juju provider sets JUJU_AVAILABILITY_ZONE.
   resume-guests-state-on-host-boot:
     type: boolean
     default: False

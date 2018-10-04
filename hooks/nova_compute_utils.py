@@ -942,3 +942,10 @@ def configure_local_ephemeral_storage():
     #       storage is never reconfigured by mistake, losing instance disks
     db.set('storage-configured', True)
     db.flush()
+
+
+def get_availability_zone():
+    use_juju_az = config('customize-failure-domain')
+    juju_az = os.environ.get('JUJU_AVAILABILITY_ZONE')
+    return (juju_az if use_juju_az and juju_az
+            else config('default-availability-zone'))
