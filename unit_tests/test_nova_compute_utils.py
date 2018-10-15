@@ -41,6 +41,7 @@ TO_PATCH = [
     'apt_update',
     'apt_purge',
     'apt_autoremove',
+    'apt_mark',
     'filter_missing_packages',
     'config',
     'os_release',

@@ -34,6 +34,7 @@ from charmhelpers.fetch import (
     apt_install,
     apt_purge,
     apt_autoremove,
+    apt_mark,
     filter_missing_packages,
 )
 
@@ -136,7 +137,12 @@ PY3_PACKAGES = [
 
 PURGE_PACKAGES = [
     'python-nova',
+]
+
+HELD_PACKAGES = [
     'python-memcache',
+    'python-six',
+    'python-psutil',
 ]
 
 VERSION_PACKAGE = 'nova-common'
@@ -251,6 +257,7 @@ VIRT_TYPES = {
     'lxc': ['nova-compute-lxc'],
     'lxd': ['nova-compute-lxd'],
 }
+
 
 # Maps virt-type config to a libvirt URI.
 LIBVIRT_URIS = {
@@ -412,6 +419,8 @@ def determine_packages():
     if cmp_release >= 'rocky':
         packages = [p for p in packages if not p.startswith('python-')]
         packages.extend(PY3_PACKAGES)
+        if virt_type == 'lxd':
+            packages.append('python3-nova-lxd')
 
     return packages
 
@@ -421,6 +430,15 @@ def determine_purge_packages():
     cmp_os_source = CompareOpenStackReleases(os_release('nova-common'))
     if cmp_os_source >= 'rocky':
         return PURGE_PACKAGES
+    return []
+
+
+def determine_held_packages():
+    '''Return a list of packages to mark as candidates for removal
+    for the current OS release'''
+    cmp_os_source = CompareOpenStackReleases(os_release('nova-common'))
+    if cmp_os_source >= 'rocky':
+        return HELD_PACKAGES
     return []
 
 
@@ -600,6 +618,8 @@ def do_openstack_upgrade(configs):
         determine_purge_packages()
     )
     if installed_packages:
+        apt_mark(filter_missing_packages(determine_held_packages()),
+                 'auto')
         apt_purge(installed_packages, fatal=True)
         apt_autoremove(purge=True, fatal=True)
 
