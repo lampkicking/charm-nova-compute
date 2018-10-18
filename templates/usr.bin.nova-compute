@@ -53,6 +53,7 @@
   /proc/*/stat r,
   /proc/uptime r,
   /proc/version r,
+  /proc/loadavg r,
   /run/libvirt/libvirt-sock rw,
   /run/lock/nova/nova-iptables wk,
   /run/lock/qemu-nbd-nbd* w,
