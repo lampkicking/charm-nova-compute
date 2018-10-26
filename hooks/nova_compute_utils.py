@@ -665,29 +665,35 @@ def create_libvirt_secret(secret_file, secret_uuid, key):
     check_call(cmd)
 
 
-def destroy_libvirt_network(netname):
-    """Delete a network using virsh net-destroy"""
+def _libvirt_network_exec(netname, action):
+    """Run action on libvirt network"""
     try:
-        out = check_output(['virsh', 'net-list']).decode('UTF-8').splitlines()
+        cmd = ['virsh', 'net-list', '--all']
+        out = check_output(cmd).decode('UTF-8').splitlines()
         if len(out) < 3:
             return
 
         for line in out[2:]:
             res = re.search("^\s+{} ".format(netname), line)
             if res:
-                check_call(['virsh', 'net-destroy', netname])
+                check_call(['virsh', 'net-{}'.format(action), netname])
                 return
 
     except CalledProcessError:
-        log("Failed to destroy libvirt network '{}'".format(netname),
+        log("Failed to {} libvirt network '{}'".format(action, netname),
             level=WARNING)
     except OSError as e:
         if e.errno == 2:
             log("virsh is unavailable. Virt Type is '{}'. Not attempting to "
-                "destroy libvirt network '{}'"
-                "".format(config('virt-type'), netname), level=DEBUG)
+                "{} libvirt network '{}'"
+                "".format(config('virt-type'), action, netname), level=DEBUG)
         else:
             raise e
+
+
+def remove_libvirt_network(netname):
+    _libvirt_network_exec(netname, 'destroy')
+    _libvirt_network_exec(netname, 'undefine')
 
 
 def configure_lxd(user='nova'):

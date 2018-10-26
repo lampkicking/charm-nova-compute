@@ -102,7 +102,7 @@ from nova_compute_utils import (
     get_hugepage_number,
     assess_status,
     set_ppc64_cpu_smt_state,
-    destroy_libvirt_network,
+    remove_libvirt_network,
     network_manager,
     libvirt_daemon,
     LIBVIRT_TYPES,
@@ -188,7 +188,7 @@ def config_changed():
         create_sysctl(yaml.dump(sysctl_dict),
                       '/etc/sysctl.d/50-nova-compute.conf')
 
-    destroy_libvirt_network('default')
+    remove_libvirt_network('default')
 
     if migration_enabled() and config('migration-auth-type') == 'ssh':
         # Check-in with nova-c-c and register new ssh key, if it has just been

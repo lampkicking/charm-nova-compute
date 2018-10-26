@@ -696,3 +696,13 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         u.log.info("Assert output of aa-status --complaining >= 3. Result: {} "
                    "Exit Code: {}".format(output, code))
         assert int(output) >= len(services)
+
+    def test_930_check_virsh_default_network(self):
+        """Verify that the default network created by libvirt was removed
+           by the charm.
+        """
+        sentry = self.nova_compute_sentry
+        output, code = sentry.run('virsh net-dumpxml default')
+        u.log.info('Assert exit code of virsh net-dumpxml default != 0.'
+                   'Result: {} Exit Code: {}'.format(output, code))
+        assert code != 0
