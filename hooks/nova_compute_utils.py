@@ -133,6 +133,8 @@ BASE_PACKAGES = [
 PY3_PACKAGES = [
     'python3-nova',
     'python3-memcache',
+    'python3-rados',
+    'python3-rbd',
 ]
 
 PURGE_PACKAGES = [
