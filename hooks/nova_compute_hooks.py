@@ -214,6 +214,9 @@ def config_changed():
     for rid in relation_ids('neutron-plugin'):
         neutron_plugin_joined(rid, remote_restart=send_remote_restart)
 
+    for rid in relation_ids('nova-ceilometer'):
+        nova_ceilometer_joined(rid, remote_restart=send_remote_restart)
+
     if is_relation_made("nrpe-external-master"):
         update_nrpe_config()
 
@@ -435,6 +438,14 @@ def upgrade_charm():
         log("{} not owned by group 'kvm', fixing permissions."
             .format(asok_path))
         shutil.chown(asok_path, group='kvm')
+
+
+@hooks.hook('nova-ceilometer-relation-joined')
+def nova_ceilometer_joined(relid=None, remote_restart=False):
+    if remote_restart:
+        rel_settings = {
+            'restart-trigger': str(uuid.uuid4())}
+        relation_set(relation_id=relid, relation_settings=rel_settings)
 
 
 @hooks.hook('nova-ceilometer-relation-changed')
