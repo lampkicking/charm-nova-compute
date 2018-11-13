@@ -57,7 +57,6 @@ from charmhelpers.fetch import (
     apt_purge,
     apt_update,
     filter_installed_packages,
-    add_source,
 )
 
 from charmhelpers.contrib.openstack.utils import (
@@ -258,8 +257,6 @@ def install_vaultlocker():
     if config('encrypt'):
         installed = len(filter_installed_packages(['vaultlocker'])) == 0
         if not installed:
-            add_source('ppa:openstack-charmers/vaultlocker')
-            apt_update(fatal=True)
             apt_install('vaultlocker', fatal=True)
 
 
