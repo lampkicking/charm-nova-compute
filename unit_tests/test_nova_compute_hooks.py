@@ -95,6 +95,8 @@ TO_PATCH = [
     'unitdata',
     # templating
     'render',
+    'remove_old_packages',
+    'services',
 ]
 
 
@@ -739,3 +741,24 @@ class NovaComputeRelationsTests(CharmTestCase):
     def test_cloud_credentials_changed(self, mock_CONFIGS):
         hooks.cloud_credentials_changed()
         mock_CONFIGS.write.assert_called_with('/etc/nova/nova.conf')
+
+    @patch.object(hooks.grp, 'getgrnam')
+    def test_upgrade_charm(self, getgrnam):
+        grp_mock = MagicMock()
+        grp_mock.gr_gid = None
+        getgrnam.return_value = grp_mock
+        self.remove_old_packages.return_value = False
+        hooks.upgrade_charm()
+        self.remove_old_packages.assert_called_once_with()
+        self.assertFalse(self.service_restart.called)
+
+    @patch.object(hooks.grp, 'getgrnam')
+    def test_upgrade_charm_purge(self, getgrnam):
+        grp_mock = MagicMock()
+        grp_mock.gr_gid = None
+        getgrnam.return_value = grp_mock
+        self.remove_old_packages.return_value = True
+        self.services.return_value = ['nova-compute']
+        hooks.upgrade_charm()
+        self.remove_old_packages.assert_called_once_with()
+        self.service_restart.assert_called_once_with('nova-compute')

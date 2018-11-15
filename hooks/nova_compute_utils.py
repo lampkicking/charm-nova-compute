@@ -435,6 +435,22 @@ def determine_purge_packages():
     return []
 
 
+def remove_old_packages():
+    '''Purge any packages that need ot be removed.
+
+    :returns: bool Whether packages were removed.
+    '''
+    installed_packages = filter_missing_packages(
+        determine_purge_packages()
+    )
+    if installed_packages:
+        apt_mark(filter_missing_packages(determine_held_packages()),
+                 'auto')
+        apt_purge(installed_packages, fatal=True)
+        apt_autoremove(purge=True, fatal=True)
+    return bool(installed_packages)
+
+
 def determine_held_packages():
     '''Return a list of packages to mark as candidates for removal
     for the current OS release'''
@@ -616,14 +632,7 @@ def do_openstack_upgrade(configs):
     reset_os_release()
     apt_install(determine_packages(), fatal=True)
 
-    installed_packages = filter_missing_packages(
-        determine_purge_packages()
-    )
-    if installed_packages:
-        apt_mark(filter_missing_packages(determine_held_packages()),
-                 'auto')
-        apt_purge(installed_packages, fatal=True)
-        apt_autoremove(purge=True, fatal=True)
+    remove_old_packages()
 
     configs.set_release(openstack_release=new_os_rel)
     configs.write_all()

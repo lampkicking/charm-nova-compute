@@ -110,6 +110,7 @@ from nova_compute_utils import (
     pause_unit_helper,
     resume_unit_helper,
     get_availability_zone,
+    remove_old_packages,
 )
 
 from charmhelpers.contrib.network.ip import (
@@ -421,9 +422,16 @@ def relation_broken():
 @hooks.hook('upgrade-charm')
 @harden()
 def upgrade_charm():
+    apt_install(determine_packages(), fatal=True)
     # NOTE: ensure psutil install for hugepages configuration
     status_set('maintenance', 'Installing apt packages')
     apt_install(filter_installed_packages(['python-psutil']))
+    packages_removed = remove_old_packages()
+    if packages_removed and not is_unit_paused_set():
+        log("Package purge detected, restarting services", "INFO")
+        for s in services():
+            service_restart(s)
+
     for r_id in relation_ids('amqp'):
         amqp_joined(relation_id=r_id)
 
