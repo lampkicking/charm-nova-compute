@@ -14,26 +14,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-<<<<<<< HEAD
 <<<<<<< HEAD:tests/dev-basic-cosmic-rocky
 """Amulet tests on a basic nova compute deployment on cosmic-rocky."""
 =======
 """Amulet tests on a basic nova compute deployment on disco-stein."""
 >>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5:tests/dev-basic-disco-stein
-=======
-"""Amulet tests on a basic nova compute deployment on cosmic-rocky."""
->>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 
 from basic_deployment import NovaBasicDeployment
 
 if __name__ == '__main__':
-<<<<<<< HEAD
 <<<<<<< HEAD:tests/dev-basic-cosmic-rocky
     deployment = NovaBasicDeployment(series='cosmic')
 =======
     deployment = NovaBasicDeployment(series='disco')
 >>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5:tests/dev-basic-disco-stein
-=======
-    deployment = NovaBasicDeployment(series='cosmic')
->>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
     deployment.run_tests()

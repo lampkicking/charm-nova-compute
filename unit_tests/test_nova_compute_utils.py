@@ -150,7 +150,12 @@ class NovaComputeUtilsTests(CharmTestCase):
             [p for p in utils.BASE_PACKAGES
              if not p.startswith('python-')] +
             ['nova-compute-kvm'] +
+<<<<<<< HEAD
             utils.PY3_PACKAGES
+=======
+            utils.PY3_PACKAGES +
+            ['python3-ceilometer', 'python3-neutron', 'python3-neutron-fwaas']
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
         )
         self.assertEqual(ex, result)
 
@@ -224,12 +229,43 @@ class NovaComputeUtilsTests(CharmTestCase):
         self.assertTrue('nova-api-metadata' in result)
 
     @patch.object(utils, 'nova_metadata_requirement')
+    @patch.object(utils, 'neutron_plugin')
     @patch.object(utils, 'network_manager')
-    def test_resource_map_nova_network_no_multihost(self, net_man, en_meta):
+    def test_determine_packages_use_multipath(self, net_man,
+                                              n_plugin, en_meta):
+        self.os_release.return_value = 'ocata'
+        en_meta.return_value = (False, None)
+        net_man.return_value = 'bob'
+        self.test_config.set('use-multipath', True)
+        self.relation_ids.return_value = []
+        result = utils.determine_packages()
+        for pkg in utils.MULTIPATH_PACKAGES:
+            self.assertTrue(pkg in result)
+
+    @patch.object(utils, 'nova_metadata_requirement')
+    @patch.object(utils, 'neutron_plugin')
+    @patch.object(utils, 'network_manager')
+    def test_determine_packages_no_multipath(self, net_man,
+                                             n_plugin, en_meta):
+        self.os_release.return_value = 'ocata'
+        en_meta.return_value = (False, None)
+        net_man.return_value = 'bob'
+        self.test_config.set('use-multipath', False)
+        self.relation_ids.return_value = []
+        result = utils.determine_packages()
+        for pkg in utils.MULTIPATH_PACKAGES:
+            self.assertFalse(pkg in result)
+
+    @patch.object(utils, 'os')
+    @patch.object(utils, 'nova_metadata_requirement')
+    @patch.object(utils, 'network_manager')
+    def test_resource_map_nova_network_no_multihost(self, net_man, en_meta,
+                                                    _os):
         self.os_release.return_value = 'icehouse'
         self.test_config.set('multi-host', 'no')
         en_meta.return_value = (False, None)
         net_man.return_value = 'flatdhcpmanager'
+        _os.path.exists.return_value = True
         result = utils.resource_map()
         ex = {
             '/etc/default/libvirt-bin': {
@@ -277,13 +313,15 @@ class NovaComputeUtilsTests(CharmTestCase):
             self.assertEqual(set(ex[k]['services']),
                              set(result[k]['services']))
 
+    @patch.object(utils, 'os')
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'network_manager')
-    def test_resource_map_nova_network_ocata(self, net_man, en_meta):
+    def test_resource_map_nova_network_ocata(self, net_man, en_meta, _os):
         self.os_release.return_value = 'ocata'
         self.test_config.set('multi-host', 'yes')
         en_meta.return_value = (False, None)
         net_man.return_value = 'flatdhcpmanager'
+        _os.path.exists.return_value = False
         result = utils.resource_map()
         ex = {
             '/etc/default/libvirt-bin': {
@@ -310,10 +348,6 @@ class NovaComputeUtilsTests(CharmTestCase):
                 'contexts': [],
                 'services': ['qemu-kvm']
             },
-            '/etc/init/libvirt-bin.override': {
-                'contexts': [],
-                'services': ['libvirtd']
-            },
             '/etc/libvirt/libvirtd.conf': {
                 'contexts': [],
                 'services': ['libvirtd']
@@ -331,14 +365,16 @@ class NovaComputeUtilsTests(CharmTestCase):
             self.assertEqual(set(ex[k]['services']),
                              set(result[k]['services']))
 
+    @patch.object(utils, 'os')
     @patch.object(utils, 'nova_metadata_requirement')
     @patch.object(utils, 'network_manager')
-    def test_resource_map_nova_network(self, net_man, en_meta):
+    def test_resource_map_nova_network(self, net_man, en_meta, _os):
 
         self.os_release.return_value = 'icehouse'
         en_meta.return_value = (False, None)
         self.test_config.set('multi-host', 'yes')
         net_man.return_value = 'flatdhcpmanager'
+        _os.path.exists.return_value = True
         result = utils.resource_map()
 
         ex = {
@@ -751,12 +787,35 @@ class NovaComputeUtilsTests(CharmTestCase):
             set_shmmax=True,
         )
 
-    def test_assess_status(self):
+    @patch.object(utils, 'is_unit_paused_set')
+    @patch.object(utils, 'services')
+    def test_assess_status(self, services, mock_is_paused):
+        services.return_value = 's1'
+        mock_is_paused.return_value = False
         with patch.object(utils, 'assess_status_func') as asf:
             callee = MagicMock()
             asf.return_value = callee
             utils.assess_status('test-config')
-            asf.assert_called_once_with('test-config')
+            asf.assert_called_once_with('test-config', 's1')
+            callee.assert_called_once_with()
+            self.os_application_version_set.assert_called_with(
+                utils.VERSION_PACKAGE
+            )
+
+    @patch.object(utils, 'os_release')
+    @patch.object(utils, 'is_unit_paused_set')
+    @patch.object(utils, 'services')
+    def test_assess_status_paused(self, services, mock_is_paused,
+                                  mock_os_release):
+        services.return_value = ['qemu-kvm', 'libvirtd', 'nova-compute']
+        mock_is_paused.return_value = True
+        mock_os_release.return_value = 'pike'
+        with patch.object(utils, 'assess_status_func') as asf:
+            callee = MagicMock()
+            asf.return_value = callee
+            utils.assess_status('test-config')
+            asf.assert_called_once_with('test-config',
+                                        ['nova-compute', 'qemu-kvm'])
             callee.assert_called_once_with()
             self.os_application_version_set.assert_called_with(
                 utils.VERSION_PACKAGE
@@ -771,7 +830,7 @@ class NovaComputeUtilsTests(CharmTestCase):
                                 make_assess_status_func,
                                 services,
                                 REQUIRED_INTERFACES):
-        services.return_value = 's1'
+        services.return_value = ['s1']
         REQUIRED_INTERFACES.copy.return_value = {'test-interface': True}
         get_optional_relations.return_value = {'optional': False}
         test_interfaces = {
@@ -781,7 +840,7 @@ class NovaComputeUtilsTests(CharmTestCase):
         utils.assess_status_func('test-config')
         # ports=None whilst port checks are disabled.
         make_assess_status_func.assert_called_once_with(
-            'test-config', test_interfaces, services='s1', ports=None)
+            'test-config', test_interfaces, services=['s1'], ports=None)
 
     def test_pause_unit_helper(self):
         with patch.object(utils, '_pause_resume_helper') as prh:
@@ -791,16 +850,21 @@ class NovaComputeUtilsTests(CharmTestCase):
             utils.resume_unit_helper('random-config')
             prh.assert_called_once_with(utils.resume_unit, 'random-config')
 
+    @patch.object(utils, 'os_release')
+    @patch.object(utils, 'is_unit_paused_set')
     @patch.object(utils, 'services')
-    def test_pause_resume_helper(self, services):
+    def test_pause_resume_helper(self, services, mock_is_paused,
+                                 mock_os_release):
         f = MagicMock()
-        services.return_value = 's1'
+        services.return_value = ['s1']
+        mock_is_paused.return_value = False
+        mock_os_release.return_value = 'queens'
         with patch.object(utils, 'assess_status_func') as asf:
             asf.return_value = 'assessor'
             utils._pause_resume_helper(f, 'some-config')
-            asf.assert_called_once_with('some-config')
+            asf.assert_called_once_with('some-config', ['s1'])
             # ports=None whilst port checks are disabled.
-            f.assert_called_once_with('assessor', services='s1', ports=None)
+            f.assert_called_once_with('assessor', services=['s1'], ports=None)
 
     @patch.object(utils, 'check_call')
     @patch.object(utils, 'check_output')

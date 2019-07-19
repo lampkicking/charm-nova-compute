@@ -126,7 +126,7 @@ class CheckException(Exception):
 
 
 class Check(object):
-    shortname_re = '[A-Za-z0-9-_.]+$'
+    shortname_re = '[A-Za-z0-9-_.@]+$'
     service_template = ("""
 #---------------------------------------------------
 # This file is Juju managed
@@ -305,7 +305,11 @@ class NRPE(object):
 
         # update-status hooks are configured to firing every 5 minutes by
         # default. When nagios-nrpe-server is restarted, the nagios server
+<<<<<<< HEAD
         # reports checks failing causing unneccessary alerts. Let's not restart
+=======
+        # reports checks failing causing unnecessary alerts. Let's not restart
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
         # on update-status hooks.
         if not hook_name() == 'update-status':
             service('restart', 'nagios-nrpe-server')
@@ -416,6 +420,7 @@ def copy_nrpe_checks(nrpe_files_dir=None):
 
     """
     NAGIOS_PLUGINS = '/usr/local/lib/nagios/plugins'
+<<<<<<< HEAD
     default_nrpe_files_dir = os.path.join(
         os.getenv('CHARM_DIR'),
         'hooks',
@@ -425,6 +430,22 @@ def copy_nrpe_checks(nrpe_files_dir=None):
         'files')
     if not nrpe_files_dir:
         nrpe_files_dir = default_nrpe_files_dir
+=======
+    if nrpe_files_dir is None:
+        # determine if "charmhelpers" is in CHARMDIR or CHARMDIR/hooks
+        for segment in ['.', 'hooks']:
+            nrpe_files_dir = os.path.abspath(os.path.join(
+                os.getenv('CHARM_DIR'),
+                segment,
+                'charmhelpers',
+                'contrib',
+                'openstack',
+                'files'))
+            if os.path.isdir(nrpe_files_dir):
+                break
+        else:
+            raise RuntimeError("Couldn't find charmhelpers directory")
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
     if not os.path.exists(NAGIOS_PLUGINS):
         os.makedirs(NAGIOS_PLUGINS)
     for fname in glob.glob(os.path.join(nrpe_files_dir, "check_*")):

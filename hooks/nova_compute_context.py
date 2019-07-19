@@ -79,6 +79,8 @@ def _save_flag_file(path, data):
         return
     with open(path, 'wt') as out:
         out.write(data)
+    os.chmod(path, 0o640)
+    shutil.chown(path, 'root', 'nova')
 
 
 # compatability functions to help with quantum -> neutron transition
@@ -198,6 +200,12 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
             # nova.conf
             ctxt['live_migration_uri'] = 'qemu+ssh://%s/system'
 
+        if config('enable-live-migration'):
+            ctxt['live_migration_permit_post_copy'] = \
+                config('live-migration-permit-post-copy')
+            ctxt['live_migration_permit_auto_converge'] = \
+                config('live-migration-permit-auto-converge')
+
         if config('instances-path') is not None:
             ctxt['instances_path'] = config('instances-path')
 
@@ -207,6 +215,13 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
         if config('use-multipath'):
             ctxt['use_multipath'] = config('use-multipath')
 
+<<<<<<< HEAD
+=======
+        if config('default-ephemeral-format'):
+            ctxt['default_ephemeral_format'] = \
+                config('default-ephemeral-format')
+
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
         if config('cpu-mode'):
             ctxt['cpu_mode'] = config('cpu-mode')
         elif ctxt['arch'] in ('ppc64el', 'ppc64le', 'aarch64'):
@@ -237,6 +252,12 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
             else:
                 ctxt['ksm'] = "AUTO"
 
+        if config('reserved-huge-pages'):
+            # To bypass juju limitation with list of strings, we
+            # consider separate the option's values per semicolons.
+            ctxt['reserved_huge_pages'] = (
+                [o.strip() for o in config('reserved-huge-pages').split(";")])
+
         if config('pci-passthrough-whitelist'):
             ctxt['pci_passthrough_whitelist'] = \
                 config('pci-passthrough-whitelist')
@@ -246,6 +267,16 @@ class NovaComputeLibvirtContext(context.OSContextGenerator):
 
         if config('vcpu-pin-set'):
             ctxt['vcpu_pin_set'] = config('vcpu-pin-set')
+
+        if config('cpu-shared-set'):
+            ctxt['cpu_shared_set'] = config('cpu-shared-set')
+
+        if config('virtio-net-tx-queue-size'):
+            ctxt['virtio_net_tx_queue_size'] = (
+                config('virtio-net-tx-queue-size'))
+        if config('virtio-net-rx-queue-size'):
+            ctxt['virtio_net_rx_queue_size'] = (
+                config('virtio-net-rx-queue-size'))
 
         ctxt['reserved_host_memory'] = config('reserved-host-memory')
 

@@ -19,12 +19,14 @@ import json
 import platform
 import sys
 import uuid
-import yaml
 import os
 import subprocess
 import grp
 import shutil
+<<<<<<< HEAD
 
+=======
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 
 import charmhelpers.core.unitdata as unitdata
 
@@ -51,6 +53,10 @@ from charmhelpers.core.host import (
     service_stop,
     write_file,
     umount,
+<<<<<<< HEAD
+=======
+    is_container,
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 )
 from charmhelpers.fetch import (
     apt_install,
@@ -110,6 +116,10 @@ from nova_compute_utils import (
     resume_unit_helper,
     get_availability_zone,
     remove_old_packages,
+<<<<<<< HEAD
+=======
+    MULTIPATH_PACKAGES,
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 )
 
 from charmhelpers.contrib.network.ip import (
@@ -182,11 +192,25 @@ def config_changed():
             send_remote_restart = True
 
     sysctl_settings = config('sysctl')
+<<<<<<< HEAD
     if sysctl_settings:
         sysctl_dict = yaml.safe_load(sysctl_settings)
         sysctl_dict['vm.swappiness'] = sysctl_dict.get('vm.swappiness', 1)
         create_sysctl(yaml.dump(sysctl_dict),
                       '/etc/sysctl.d/50-nova-compute.conf')
+=======
+    if sysctl_settings and not is_container():
+        create_sysctl(
+            sysctl_settings,
+            '/etc/sysctl.d/50-nova-compute.conf',
+            # Some keys in the config may not exist in /proc/sys/net/.
+            # For example, the conntrack module may not be loaded when
+            # using lxd drivers insteam of kvm. In these cases, we
+            # simply ignore the missing keys, rather than making time
+            # consuming calls out to the filesystem to check for their
+            # existence.
+            ignore=True)
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 
     remove_libvirt_network('default')
 
@@ -248,6 +272,10 @@ def config_changed():
         NovaNetworkAppArmorContext().setup_aa_profile()
 
     install_vaultlocker()
+<<<<<<< HEAD
+=======
+    install_multipath()
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 
     configure_local_ephemeral_storage()
 
@@ -259,6 +287,16 @@ def install_vaultlocker():
         if not installed:
             apt_install('vaultlocker', fatal=True)
 
+<<<<<<< HEAD
+=======
+
+def install_multipath():
+    if config('use-multipath'):
+        installed = len(filter_installed_packages(MULTIPATH_PACKAGES)) == 0
+        if not installed:
+            apt_install(MULTIPATH_PACKAGES, fatal=True)
+
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 
 @hooks.hook('amqp-relation-joined')
 def amqp_joined(relation_id=None):
@@ -350,7 +388,7 @@ def get_ceph_request():
         replicas = config('ceph-osd-replication-count')
         weight = config('ceph-pool-weight')
         rq.add_op_create_pool(name=name, replica_count=replicas, weight=weight,
-                              group='vms')
+                              group='vms', app_name='rbd')
     if config('restrict-ceph-pools'):
         rq.add_op_request_access_to_group(
             name="volumes",
@@ -419,7 +457,12 @@ def relation_broken():
 @hooks.hook('upgrade-charm')
 @harden()
 def upgrade_charm():
+<<<<<<< HEAD
     apt_install(determine_packages(), fatal=True)
+=======
+    apt_install(filter_installed_packages(determine_packages()),
+                fatal=True)
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
     # NOTE: ensure psutil install for hugepages configuration
     status_set('maintenance', 'Installing apt packages')
     apt_install(filter_installed_packages(['python-psutil']))
@@ -576,7 +619,11 @@ def secrets_storage_joined(relation_id=None):
 def secrets_storage_changed():
     vault_ca = relation_get('vault_ca')
     if vault_ca:
+<<<<<<< HEAD
         vault_ca = base64.decodestring(json.loads(vault_ca).encode())
+=======
+        vault_ca = base64.decodebytes(json.loads(vault_ca).encode())
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
         write_file('/usr/local/share/ca-certificates/vault-ca.crt',
                    vault_ca, perms=0o644)
         subprocess.check_call(['update-ca-certificates', '--fresh'])

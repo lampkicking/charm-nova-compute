@@ -6,3 +6,8 @@ resume:
   description: Resume the nova_compute unit.  This action will start nova_compute services.
 hugepagereport:
   description: Report on hugepage configuration and usage
+<<<<<<< HEAD
+=======
+security-checklist:
+  description: Validate the running configuration against the OpenStack security guides checklist
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
