@@ -108,6 +108,18 @@ options:
     description: |
       TCP authentication scheme for libvirt live migration. Available options
       include ssh.
+  live-migration-permit-post-copy:
+    type: boolean
+    default: False
+    description: |
+      If live-migration is enabled, this option allows Nova to switch an on-
+      going live migration to post-copy mode.
+  live-migration-permit-auto-converge:
+    type: boolean
+    default: False
+    description: |
+      If live-migration is enabled, this option allows Nova to throttle down
+      CPU when an on-going live migration is slow.
   authorized-keys-path:
     type: string
     default: '{homedir}/.ssh/authorized_keys'
@@ -145,6 +157,18 @@ options:
     type: string
     default: 'yes'
     description: Whether to run nova-api and nova-network on the compute nodes.
+  reserved-huge-pages:
+    type: string
+    default:
+    description: |
+      Sets a reserved amont of huge pages per NUMA nodes which are used by
+      third-party components. Semicolons are used as separator.
+      .
+        reserved_huge_pages = node:0,size:2048,count:64;node:1,size:1GB,count:1
+      .
+      The above will consider 64 pages of 2MiB on NUMA node 0 and 1 page of
+      1GiB on NUMA node 1 reserved. They will not be used by Nova to map guests
+      memory.
   pci-passthrough-whitelist:
     type: string
     default:
@@ -187,6 +211,32 @@ options:
       Sets vcpu_pin_set option in nova.conf which defines which pcpus that
       instance vcpus can or cannot use. For example '^0,^2' to reserve two
       cpus for the host.
+  cpu-shared-set:
+    type: string
+    default:
+    description: |
+      Sets compute/cpu_shared_set option in nova.conf defines which
+      physical CPUs will be used for best-effort guest vCPU resources.
+      Currently only used by libvirt driver to place guest emulator threads
+      when hw:emulator_threads_policy:share is set.
+  virtio-net-tx-queue-size:
+    type: int
+    default:
+    description: |
+      Sets libvirt/tx_queue_size option in nova.conf. Larger queues sizes for
+      virtio-net devices increases networking performance by amortizing vCPU
+      preemption and avoiding packet drops. Only works with Rocky and later,
+      since QEMU 2.10.0 and libvirt 3.7.0. Default value 256. Authorized
+      values [256, 512, 1024].
+  virtio-net-rx-queue-size:
+    type: int
+    default:
+    description: |
+      Sets libvirt/rx_queue_size option in nova.conf. Larger queues sizes for
+      virtio-net devices increases networking performance by amortizing vCPU
+      preemption and avoiding packet drops. Only works with Rocky and later,
+      since QEMU 2.7.0 and libvirt 2.3.0. Default value 256. Authorized
+      values [256, 512, 1024].
   worker-multiplier:
     type: float
     default:
@@ -329,7 +379,16 @@ options:
   # Other config
   sysctl:
     type: string
-    default:
+    default: |
+      { net.ipv4.neigh.default.gc_thresh1 : 128,
+        net.ipv4.neigh.default.gc_thresh2 : 28672,
+        net.ipv4.neigh.default.gc_thresh3 : 32768,
+        net.ipv6.neigh.default.gc_thresh1 : 128,
+        net.ipv6.neigh.default.gc_thresh2 : 28672,
+        net.ipv6.neigh.default.gc_thresh3 : 32768,
+        net.nf_conntrack_max : 1000000,
+        net.netfilter.nf_conntrack_buckets : 204800,
+        net.netfilter.nf_conntrack_max : 1000000 }
     description: |
       YAML formatted associative array of sysctl values, e.g.:
       '{ kernel.pid_max : 4194303 }'
@@ -420,8 +479,13 @@ options:
     type: boolean
     default: False
     description: |
+<<<<<<< HEAD
       Use a multipath connection for iSCSI volumes. Enabling this feature
       causes libvirt to discover and login to available iscsi targets before
+=======
+      Use a multipath connection for iSCSI or FC volumes. Enabling this feature
+      causes libvirt to login, discover and scan available targets before
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
       presenting the disk via device mapper (/dev/mapper/XX) to the VM instead
       of a single path (/dev/disk/by-path/XX). If changed after deployment,
       each VM will require a full stop/start for changes to take affect.
@@ -432,6 +496,15 @@ options:
       Block devices to use for storage of ephermeral disks to support nova
       instances; generally used in-conjunction with 'encrypt' to support
       data-at-rest encryption of instance direct attached storage volumes.
+<<<<<<< HEAD
+=======
+  default-ephemeral-format:
+    type: string
+    default: ext4
+    description: |
+      The default format an ephemeral volume will be formatted with on creation.
+      Possible values: ext2 ext3 ext4 xfs ntfs (only for Windows guests)
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
   encrypt:
     default: False
     type: boolean

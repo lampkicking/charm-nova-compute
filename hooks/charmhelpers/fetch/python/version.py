@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-#
-# Copyright 2016 Canonical Ltd
+# coding: utf-8
+
+# Copyright 2014-2015 Canonical Limited.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,10 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Amulet tests on a basic nova compute deployment on trusty-icehouse."""
+import sys
 
-from basic_deployment import NovaBasicDeployment
+__author__ = "Jorge Niedbalski <jorge.niedbalski@canonical.com>"
 
-if __name__ == '__main__':
-    deployment = NovaBasicDeployment(series='trusty')
-    deployment.run_tests()
+
+def current_version():
+    """Current system python version"""
+    return sys.version_info
+
+
+def current_version_string():
+    """Current system python version as string major.minor.micro"""
+    return "{0}.{1}.{2}".format(sys.version_info.major,
+                                sys.version_info.minor,
+                                sys.version_info.micro)

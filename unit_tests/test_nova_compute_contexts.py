@@ -216,7 +216,54 @@ class NovaComputeContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'force_raw_images': True,
+<<<<<<< HEAD
+=======
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'reserved_host_memory': 512}, libvirt())
+
+    def test_libvirt_context_libvirtd_reserved_huge_pages_1(self):
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'yakkety'}
+        self.os_release.return_value = 'ocata'
+        self.kv.return_value = FakeUnitdata(**{'host_uuid': self.host_uuid})
+        self.test_config.set('reserved-huge-pages', 'node:0,size:2048,count:6')
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(
+            {'libvirtd_opts': '',
+             'libvirt_user': 'libvirt',
+             'arch': platform.machine(),
+             'ksm': 'AUTO',
+             'kvm_hugepages': 0,
+             'listen_tls': 0,
+             'host_uuid': self.host_uuid,
+             'force_raw_images': True,
+             'default_ephemeral_format': 'ext4',
+             'reserved_host_memory': 512,
+             'reserved_huge_pages': ['node:0,size:2048,count:6']}, libvirt())
+
+    def test_libvirt_context_libvirtd_reserved_huge_pages_2(self):
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'yakkety'}
+        self.os_release.return_value = 'ocata'
+        self.kv.return_value = FakeUnitdata(**{'host_uuid': self.host_uuid})
+        self.test_config.set(
+            'reserved-huge-pages',
+            'node:0,size:2048,count:6;node:1,size:1G,count:32')
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(
+            {'libvirtd_opts': '',
+             'libvirt_user': 'libvirt',
+             'arch': platform.machine(),
+             'ksm': 'AUTO',
+             'kvm_hugepages': 0,
+             'listen_tls': 0,
+             'host_uuid': self.host_uuid,
+             'force_raw_images': True,
+             'default_ephemeral_format': 'ext4',
+             'reserved_host_memory': 512,
+             'reserved_huge_pages': ['node:0,size:2048,count:6',
+                                     'node:1,size:1G,count:32']}, libvirt())
 
     def test_libvirt_bin_context_no_migration(self):
         self.lsb_release.return_value = {'DISTRIB_CODENAME': 'lucid'}
@@ -233,6 +280,10 @@ class NovaComputeContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'force_raw_images': True,
+<<<<<<< HEAD
+=======
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'reserved_host_memory': 512}, libvirt())
 
     def test_libvirt_bin_context_migration_tcp_listen(self):
@@ -250,6 +301,56 @@ class NovaComputeContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'live_migration_uri': 'qemu+ssh://%s/system',
+<<<<<<< HEAD
+=======
+             'live_migration_permit_auto_converge': False,
+             'live_migration_permit_post_copy': False,
+             'default_ephemeral_format': 'ext4',
+             'force_raw_images': True,
+             'reserved_host_memory': 512}, libvirt())
+
+    def test_libvirt_bin_context_migration_tcp_listen_with_auto_converge(self):
+        self.kv.return_value = FakeUnitdata(**{'host_uuid': self.host_uuid})
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'lucid'}
+        self.test_config.set('enable-live-migration', True)
+        self.test_config.set('live-migration-permit-auto-converge', True)
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(
+            {'libvirtd_opts': '-d -l',
+             'libvirt_user': 'libvirtd',
+             'arch': platform.machine(),
+             'ksm': 'AUTO',
+             'kvm_hugepages': 0,
+             'listen_tls': 0,
+             'host_uuid': self.host_uuid,
+             'live_migration_uri': 'qemu+ssh://%s/system',
+             'live_migration_permit_auto_converge': True,
+             'live_migration_permit_post_copy': False,
+             'force_raw_images': True,
+             'default_ephemeral_format': 'ext4',
+             'reserved_host_memory': 512}, libvirt())
+
+    def test_libvirt_bin_context_migration_tcp_listen_with_post_copy(self):
+        self.kv.return_value = FakeUnitdata(**{'host_uuid': self.host_uuid})
+        self.lsb_release.return_value = {'DISTRIB_CODENAME': 'lucid'}
+        self.test_config.set('enable-live-migration', True)
+        self.test_config.set('live-migration-permit-post-copy', True)
+        libvirt = context.NovaComputeLibvirtContext()
+
+        self.assertEqual(
+            {'libvirtd_opts': '-d -l',
+             'libvirt_user': 'libvirtd',
+             'arch': platform.machine(),
+             'ksm': 'AUTO',
+             'kvm_hugepages': 0,
+             'listen_tls': 0,
+             'host_uuid': self.host_uuid,
+             'live_migration_uri': 'qemu+ssh://%s/system',
+             'live_migration_permit_auto_converge': False,
+             'live_migration_permit_post_copy': True,
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'force_raw_images': True,
              'reserved_host_memory': 512}, libvirt())
 
@@ -269,6 +370,10 @@ class NovaComputeContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'force_raw_images': True,
+<<<<<<< HEAD
+=======
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'reserved_host_memory': 512}, libvirt())
 
     def test_libvirt_hugepages(self):
@@ -288,6 +393,10 @@ class NovaComputeContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'force_raw_images': True,
+<<<<<<< HEAD
+=======
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'reserved_host_memory': 512}, libvirt())
 
     def test_libvirt_context_libvirtd_force_raw_images(self):
@@ -306,6 +415,10 @@ class NovaComputeContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'force_raw_images': False,
+<<<<<<< HEAD
+=======
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'reserved_host_memory': 512}, libvirt())
 
     def test_lxd_live_migration_opts_xenial(self):
@@ -396,6 +509,9 @@ class NovaComputeContextTests(CharmTestCase):
         self.test_config.set('reserved-host-memory', 1024)
         self.test_config.set('vcpu-pin-set', '^0^2')
         self.test_config.set('pci-passthrough-whitelist', 'mypcidevices')
+        self.test_config.set('virtio-net-tx-queue-size', 512)
+        self.test_config.set('virtio-net-rx-queue-size', 1024)
+        self.test_config.set('cpu-shared-set', "4-12,^8,15")
         libvirt = context.NovaComputeLibvirtContext()
 
         self.assertEqual(
@@ -410,7 +526,15 @@ class NovaComputeContextTests(CharmTestCase):
              'reserved_host_memory': 1024,
              'vcpu_pin_set': '^0^2',
              'force_raw_images': True,
+<<<<<<< HEAD
              'pci_passthrough_whitelist': 'mypcidevices'}, libvirt())
+=======
+             'pci_passthrough_whitelist': 'mypcidevices',
+             'virtio_net_tx_queue_size': 512,
+             'virtio_net_rx_queue_size': 1024,
+             'default_ephemeral_format': 'ext4',
+             'cpu_shared_set': "4-12,^8,15"}, libvirt())
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 
     def test_ksm_configs(self):
         self.lsb_release.return_value = {'DISTRIB_CODENAME': 'lucid'}
@@ -562,6 +686,10 @@ class SerialConsoleContextTests(CharmTestCase):
              'listen_tls': 0,
              'host_uuid': self.host_uuid,
              'force_raw_images': True,
+<<<<<<< HEAD
+=======
+             'default_ephemeral_format': 'ext4',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
              'reserved_host_memory': 512}, libvirt())
 
 

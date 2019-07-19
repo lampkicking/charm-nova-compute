@@ -84,13 +84,13 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             {'name': 'glance'},
             {'name': 'percona-cluster'},
         ]
-        if self._get_openstack_release() >= self.xenial_ocata:
-            other_ocata_services = [
+        if self._get_openstack_release() >= self.trusty_mitaka:
+            other_mitaka_services = [
                 {'name': 'neutron-gateway'},
                 {'name': 'neutron-api'},
                 {'name': 'neutron-openvswitch'},
             ]
-            other_services += other_ocata_services
+            other_services += other_mitaka_services
 
         super(NovaBasicDeployment, self)._add_services(this_service,
                                                        other_services)
@@ -112,8 +112,8 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             'glance:shared-db': 'percona-cluster:shared-db',
             'glance:amqp': 'rabbitmq-server:amqp'
         }
-        if self._get_openstack_release() >= self.xenial_ocata:
-            ocata_relations = {
+        if self._get_openstack_release() >= self.trusty_mitaka:
+            mitaka_relations = {
                 'neutron-gateway:amqp': 'rabbitmq-server:amqp',
                 'nova-cloud-controller:quantum-network-service':
                 'neutron-gateway:quantum-network-service',
@@ -125,7 +125,7 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
                                                'neutron-plugin',
                 'rabbitmq-server:amqp': 'neutron-openvswitch:amqp',
             }
-            relations.update(ocata_relations)
+            relations.update(mitaka_relations)
 
         super(NovaBasicDeployment, self)._add_relations(relations)
 
@@ -139,7 +139,11 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             nova_config.update({'ephemeral-device': '/dev/vdb',
                                 'ephemeral-unmount': '/mnt'})
         nova_cc_config = {}
+<<<<<<< HEAD
         if self._get_openstack_release() >= self.xenial_ocata:
+=======
+        if self._get_openstack_release() >= self.trusty_mitaka:
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
             nova_cc_config['network-manager'] = 'Neutron'
 
         keystone_config = {
@@ -285,15 +289,14 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
                                        'nova-api'],
             self.nova_cc_sentry: ['nova-conductor'],
             self.keystone_sentry: ['keystone'],
-            self.glance_sentry: ['glance-registry',
-                                 'glance-api']
+            self.glance_sentry: ['glance-api']
         }
 
         if self._get_openstack_release() >= self.trusty_liberty:
             services[self.keystone_sentry] = ['apache2']
 
         _os_release = self._get_openstack_release_string()
-        if CompareOpenStackReleases(_os_release) >= 'ocata':
+        if CompareOpenStackReleases(_os_release) >= 'mitaka':
             services[self.nova_compute_sentry].remove('nova-network')
             services[self.nova_compute_sentry].remove('nova-api')
 
@@ -462,7 +465,7 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             'restart_trigger': u.not_null
         }
 
-        if self._get_openstack_release() >= self.xenial_ocata:
+        if self._get_openstack_release() >= self.trusty_mitaka:
             expected['network_manager'] = 'neutron'
 
         ret = u.validate_relation_data(unit, relation, expected)
@@ -470,6 +473,7 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             message = u.relation_error('nova-cc cloud-compute', ret)
             amulet.raise_status(amulet.FAIL, msg=message)
 
+<<<<<<< HEAD
     def test_300_nova_config(self):
         """Verify the data in the nova config file."""
 
@@ -546,6 +550,8 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
                 message = "nova config error: {}".format(ret)
                 amulet.raise_status(amulet.FAIL, msg=message)
 
+=======
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
     def test_400_image_instance_create(self):
         """Create an image/instance, verify they exist, and delete them."""
 
@@ -595,6 +601,20 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         report = data.get(u"results").get(u"hugepagestats")
         assert report.find('free_hugepages') != -1
 
+<<<<<<< HEAD
+=======
+    def test_501_security_checklist_action(self):
+        """Verify expected result on a default install"""
+        u.log.debug("Testing security-checklist")
+        sentry_unit = self.nova_compute_sentry
+
+        action_id = u.run_action(sentry_unit, "security-checklist")
+        u.wait_on_action(action_id)
+        data = amulet.actions.get_action_output(action_id, full_output=True)
+        assert data.get(u"status") == "failed", \
+            "Security check is expected to not pass by default"
+
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
     def test_900_restart_on_config_change(self):
         """Verify that the specified services are restarted when the config
            is changed."""
@@ -611,7 +631,7 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         conf_file = '/etc/nova/nova.conf'
         services = {'nova-compute': conf_file}
 
-        if self._get_openstack_release() < self.xenial_ocata:
+        if self._get_openstack_release() < self.trusty_mitaka:
             services.update({
                 'nova-api': conf_file,
                 'nova-network': conf_file
@@ -648,6 +668,20 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
         assert u.wait_on_action(action_id), "Pause action failed."
         assert u.status_get(sentry_unit)[0] == "maintenance"
 
+        # check that on resume libvirt wasn't stopped (LP: #1802917)
+        cmd = ('cd hooks; python3 -c '
+               '"from nova_compute_utils import libvirt_daemon; '
+               'print(libvirt_daemon())"')
+        daemon, code = sentry_unit.run(cmd)
+
+        if self.series == "trusty":
+            cmd = 'service %s status' % daemon
+        else:
+            cmd = 'systemctl status %s' % daemon
+
+        output, code = sentry_unit.run(cmd)
+        assert code == 0, '%s, exit code: %d, output: %s' % (cmd, code, output)
+
         action_id = u.run_action(sentry_unit, "resume")
         assert u.wait_on_action(action_id), "Resume action failed."
         assert u.status_get(sentry_unit)[0] == "active"
@@ -663,7 +697,7 @@ class NovaBasicDeployment(OpenStackAmuletDeployment):
             'nova-compute': '/etc/apparmor.d/usr.bin.nova-compute',
         }
 
-        if self._get_openstack_release() < self.xenial_ocata:
+        if self._get_openstack_release() < self.trusty_mitaka:
             services.update({
                 'nova-network': '/etc/apparmor.d/usr.bin.nova-network',
                 'nova-api': '/etc/apparmor.d/usr.bin.nova-api',

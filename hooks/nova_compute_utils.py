@@ -128,6 +128,10 @@ BASE_PACKAGES = [
     'python-six',
     'python-psutil',
     'xfsprogs',
+<<<<<<< HEAD
+=======
+    'nfs-common',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 ]
 
 PY3_PACKAGES = [
@@ -135,10 +139,26 @@ PY3_PACKAGES = [
     'python3-memcache',
     'python3-rados',
     'python3-rbd',
+<<<<<<< HEAD
 ]
 
 PURGE_PACKAGES = [
     'python-nova',
+=======
+]
+
+PURGE_PACKAGES = [
+    'python-ceilometer',
+    'python-neutron',
+    'python-neutron-fwaas',
+    'python-nova',
+    'python-nova-lxd',
+]
+
+MULTIPATH_PACKAGES = [
+    'multipath-tools',
+    'sysfsutils',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 ]
 
 HELD_PACKAGES = [
@@ -337,6 +357,12 @@ def resource_map():
     enable_nova_metadata, _ = nova_metadata_requirement()
     if enable_nova_metadata:
         resource_map[NOVA_CONF]['services'].append('nova-api-metadata')
+
+    # NOTE(james-page): If not on an upstart based system, don't write
+    #                   and override file for libvirt-bin.
+    if not os.path.exists('/etc/init'):
+        del resource_map[LIBVIRT_BIN_OVERRIDES]
+
     return resource_map
 
 
@@ -418,9 +444,26 @@ def determine_packages():
 
     packages.extend(determine_packages_arch())
 
+<<<<<<< HEAD
     if cmp_release >= 'rocky':
         packages = [p for p in packages if not p.startswith('python-')]
         packages.extend(PY3_PACKAGES)
+=======
+    # LP#1806830 - ensure that multipath packages are installed when
+    # use-multipath option is enabled.
+    if config('use-multipath'):
+        packages.extend(MULTIPATH_PACKAGES)
+
+    if cmp_release >= 'rocky':
+        packages = [p for p in packages if not p.startswith('python-')]
+        packages.extend(PY3_PACKAGES)
+        if filter_missing_packages(['python-ceilometer']):
+            packages.append('python3-ceilometer')
+        if filter_missing_packages(['python-neutron']):
+            packages.append('python3-neutron')
+        if filter_missing_packages(['python-neutron-fwaas']):
+            packages.append('python3-neutron-fwaas')
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
         if virt_type == 'lxd':
             packages.append('python3-nova-lxd')
 
@@ -642,7 +685,7 @@ def do_openstack_upgrade(configs):
 
 
 def import_keystone_ca_cert():
-    """If provided, improt the Keystone CA cert that gets forwarded
+    """If provided, import the Keystone CA cert that gets forwarded
     to compute nodes via the cloud-compute interface
     """
     ca_cert = relation_get('ca_cert')
@@ -824,11 +867,16 @@ def assess_status(configs):
     @param configs: a templating.OSConfigRenderer() object
     @returns None - this function is executed for its side-effect
     """
-    assess_status_func(configs)()
+    if is_unit_paused_set():
+        services_to_check = services_to_pause_or_resume()
+    else:
+        services_to_check = services()
+
+    assess_status_func(configs, services_to_check)()
     os_application_version_set(VERSION_PACKAGE)
 
 
-def assess_status_func(configs):
+def assess_status_func(configs, services_=None):
     """Helper function to create the function that will assess_status() for
     the unit.
     Uses charmhelpers.contrib.openstack.utils.make_assess_status_func() to
@@ -846,7 +894,7 @@ def assess_status_func(configs):
     required_interfaces.update(get_optional_relations())
     return make_assess_status_func(
         configs, required_interfaces,
-        services=services(), ports=None)
+        services=services_ or services(), ports=None)
 
 
 def pause_unit_helper(configs):
@@ -869,6 +917,10 @@ def resume_unit_helper(configs):
     _pause_resume_helper(resume_unit, configs)
 
 
+def services_to_pause_or_resume():
+    return list(set(services()) - {libvirt_daemon()})
+
+
 def _pause_resume_helper(f, configs):
     """Helper function that uses the make_assess_status_func(...) from
     charmhelpers.contrib.openstack.utils to create an assess_status(...)
@@ -878,8 +930,9 @@ def _pause_resume_helper(f, configs):
     """
     # TODO(ajkavanagh) - ports= has been left off because of the race hazard
     # that exists due to service_start()
-    f(assess_status_func(configs),
-      services=services(),
+
+    f(assess_status_func(configs, services_to_pause_or_resume()),
+      services=services_to_pause_or_resume(),
       ports=None)
 
 

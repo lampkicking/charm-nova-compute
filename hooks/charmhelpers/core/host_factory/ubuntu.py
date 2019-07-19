@@ -1,5 +1,6 @@
 import subprocess
 
+from charmhelpers.core.hookenv import cached
 from charmhelpers.core.strutils import BasicStringComparator
 
 
@@ -22,6 +23,10 @@ UBUNTU_RELEASES = (
     'artful',
     'bionic',
     'cosmic',
+<<<<<<< HEAD
+=======
+    'disco',
+>>>>>>> 15f8a94e080ce4c708dfbfa7b602ebd165e44aa5
 )
 
 
@@ -72,6 +77,14 @@ def lsb_release():
     return d
 
 
+def get_distrib_codename():
+    """Return the codename of the distribution
+    :returns: The codename
+    :rtype: str
+    """
+    return lsb_release()['DISTRIB_CODENAME'].lower()
+
+
 def cmp_pkgrevno(package, revno, pkgcache=None):
     """Compare supplied revno with the revno of the installed package.
 
@@ -89,3 +102,16 @@ def cmp_pkgrevno(package, revno, pkgcache=None):
         pkgcache = apt_cache()
     pkg = pkgcache[package]
     return apt_pkg.version_compare(pkg.current_ver.ver_str, revno)
+
+
+@cached
+def arch():
+    """Return the package architecture as a string.
+
+    :returns: the architecture
+    :rtype: str
+    :raises: subprocess.CalledProcessError if dpkg command fails
+    """
+    return subprocess.check_output(
+        ['dpkg', '--print-architecture']
+    ).rstrip().decode('UTF-8')
